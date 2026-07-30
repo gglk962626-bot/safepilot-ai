@@ -1,0 +1,22 @@
+# SafePilot AI 테마 설정 (B2B 산업안전 SaaS 스타일)
+# 색·폰트·라운딩의 기본값은 여기서 정의하고, 세부 스타일은 app.py의 CSS가 보완한다.
+
+[theme]
+base = "light"
+primaryColor = "#0d3b66"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f6f8fb"
+textColor = "#1e293b"
+borderColor = "#e2e8f0"
+linkColor = "#155a96"
+baseRadius = "10px"
+buttonRadius = "10px"
+showWidgetBorder = true
+font = "'Noto Sans KR':https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap"
+headingFont = "'Noto Sans KR':https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;800&display=swap"
+baseFontSize = 15
+
+greenColor = "#15803d"
+orangeColor = "#c2410c"
+redColor = "#b91c1c"
+grayColor = "#64748b"

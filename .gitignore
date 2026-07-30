@@ -1,0 +1,25 @@
+# SafePilot AI (Python / Streamlit)
+
+# 환경변수 및 비밀키 (절대 커밋하지 않음)
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+
+# 캐시 / 임시
+.pytest_cache/
+.mypy_cache/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
