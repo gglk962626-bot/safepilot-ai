@@ -509,7 +509,12 @@ if result:
             st.markdown(f"☐ {item}")
 
     # AI 교차검토 결과 (판정별 Pill 배지: 적정=Green / 보완=Amber / 해당없음=Gray)
-    st.markdown('<div class="sp-sec">17개 위험범주 전수 점검 결과</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sp-sec">AI 교차검토 결과 (17개 위험범주 전수 점검)</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<p style="font-size:.83rem; color:var(--sp-muted); margin:-4px 0 10px 14px; line-height:1.5;">'
+        '※ 본 내용은 최종 결과에 반영된 AI 교차검토 및 보완 과정을 확인하기 위한 검증 기록입니다.</p>',
+        unsafe_allow_html=True,
+    )
     status_cls = {"적정": "s-ok", "보완": "s-fix", "해당없음": "s-na"}
     finding_rows = ""
     for f in result.review.findings:

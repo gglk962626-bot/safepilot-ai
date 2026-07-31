@@ -108,6 +108,8 @@ def build_pdf(result: FullResult) -> bytes:
         "cell_b": ParagraphStyle("cell_b", fontName=bold_font, fontSize=8, leading=12),
         "warn": ParagraphStyle("warn", fontName="KR", fontSize=8.5, leading=13,
                                textColor=colors.HexColor("#8a5a00")),
+        "note": ParagraphStyle("note", fontName="KR", fontSize=8, leading=12,
+                               spaceAfter=4, textColor=colors.HexColor("#64748b")),
     }
 
     def P(text, style="body"):
@@ -239,7 +241,10 @@ def build_pdf(result: FullResult) -> bytes:
     story.append(t)
 
     # AI 검토 내역
-    story.append(Paragraph("7. 17개 위험범주 전수 점검 결과", styles["h2"]))
+    story.append(Paragraph("7. AI 교차검토 결과 (17개 위험범주 전수 점검)", styles["h2"]))
+    story.append(Paragraph(
+        "※ 본 내용은 최종 결과에 반영된 AI 교차검토 및 보완 과정을 확인하기 위한 검증 기록입니다.",
+        styles["note"]))
     rv_rows = [[P("검토 범주", "cell_b"), P("판정", "cell_b"), P("검토 의견", "cell_b")]]
     for f in result.review.findings:
         rv_rows.append([P(f.category, "cell"), P(f.status, "cell"), P(f.comment, "cell")])
@@ -364,7 +369,8 @@ th{{background:#eef3f8}}
 <h2>6. 작업 전 체크리스트</h2>
 <table><tr><th style="width:40px">No.</th><th>점검 항목</th><th style="width:60px">확인</th></tr>{check_items}</table>
 
-<h2>7. 17개 위험범주 전수 점검 결과</h2>
+<h2>7. AI 교차검토 결과 (17개 위험범주 전수 점검)</h2>
+<p style="font-size:12px;color:#64748b;margin-top:-4px">※ 본 내용은 최종 결과에 반영된 AI 교차검토 및 보완 과정을 확인하기 위한 검증 기록입니다.</p>
 <table><tr><th style="width:140px">검토 범주</th><th style="width:70px">판정</th><th>검토 의견</th></tr>{finding_rows}</table>
 
 <h2>8. 검토 전후 변경사항</h2><ol>{change_items}</ol>
