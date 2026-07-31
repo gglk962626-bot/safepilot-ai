@@ -5,12 +5,13 @@ from __future__ import annotations
 import html
 from datetime import datetime
 
+import pandas as pd
 import streamlit as st
 
 import ai_service
 import demo_data
 import pdf_service
-from models import FullResult, RISK_COLORS, WorkInput
+from models import AssessmentResult, FullResult, RISK_COLORS, WorkInput
 
 # ---------------------------------------------------------------------------
 # 페이지 설정 및 스타일
@@ -106,6 +107,8 @@ st.markdown(
 .sp-badge.demo::before {background: #6366f1;}
 .sp-badge.ai {background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;}
 .sp-badge.ai::before {background: #10b981;}
+.sp-badge.edited {background: #fffbeb; color: #b45309; border: 1px solid #fde68a;}
+.sp-badge.edited::before {background: #f59e0b;}
 
 /* ---------- 메트릭 카드 ---------- */
 .sp-metric {
@@ -268,6 +271,7 @@ hr {margin: 1.4rem 0 1rem 0;}
 
 if "result" not in st.session_state:
     st.session_state.result = None  # FullResult
+st.session_state.setdefault("result_ver", 0)  # 편집 위젯 상태 초기화용 버전 번호
 for key in ["in_name", "in_location", "in_description", "in_equipment", "in_workers", "in_notes"]:
     st.session_state.setdefault(key, "")
 
@@ -389,6 +393,7 @@ if generate:
                     is_demo=True,
                     generated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
                 )
+                st.session_state.result_ver += 1  # 새 결과 → 편집 위젯 상태 초기화
                 if missing:
                     st.info("데모 모드: 입력값이 비어 있어 샘플 작업 정보로 결과를 표시합니다.", icon="ℹ️")
             else:
@@ -405,6 +410,7 @@ if generate:
                     is_demo=False,
                     generated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
                 )
+                st.session_state.result_ver += 1  # 새 결과 → 편집 위젯 상태 초기화
         except ai_service.AIServiceError as e:
             st.session_state.result = None
             st.error(str(e), icon="🚨")
@@ -428,6 +434,8 @@ if result:
         if result.is_demo
         else '<span class="sp-badge ai">실제 AI 모드 결과</span>'
     )
+    if result.edited:
+        mode_badge += ' <span class="sp-badge edited">책임자 수정 반영</span>'
     st.markdown(
         f'<div class="sp-sec">위험성평가 결과 {mode_badge}</div>', unsafe_allow_html=True
     )
@@ -462,6 +470,101 @@ if result:
         )
 
     st.write("")
+
+    # -----------------------------------------------------------------------
+    # 결과 편집 모드 (책임자 검토·수정)
+    # - 수정된 값은 Pydantic으로 재검증되며, 위험도 점수는 코드가 자동 재계산한다.
+    # - AI 교차검토 내역(검증 기록)은 수정하지 않고 그대로 보존한다.
+    # -----------------------------------------------------------------------
+    ver = st.session_state.result_ver
+    edit_on = st.toggle(
+        ":material/edit_note: 결과 편집 모드 (책임자 검토·수정)",
+        key=f"edit_toggle_{ver}",
+        help="AI 결과를 현장 여건에 맞게 직접 수정할 수 있습니다. "
+             "가능성·심각도를 수정하면 위험도 점수와 등급이 자동으로 다시 계산됩니다.",
+    )
+    if edit_on:
+        with st.container(border=True):
+            st.markdown("**① 위험성평가 표 수정** — 셀을 클릭해 내용을 고치고, "
+                        "표 왼쪽 체크 후 Delete 키로 행 삭제, 맨 아래 빈 행에 입력하면 행이 추가됩니다.")
+            hazard_df = pd.DataFrame([{
+                "작업 단계": h.step,
+                "분류": h.category,
+                "위험요인": h.hazard,
+                "원인": h.cause,
+                "예상 피해": h.damage,
+                "가능성(1-5)": h.likelihood,
+                "심각도(1-5)": h.severity,
+                "예방대책(줄바꿈 구분)": "\n".join(h.measures),
+                "개인보호구(쉼표 구분)": ", ".join(h.ppe),
+            } for h in final.hazards])
+            edited_df = st.data_editor(
+                hazard_df,
+                num_rows="dynamic",
+                key=f"ed_hazards_{ver}",
+                column_config={
+                    "가능성(1-5)": st.column_config.NumberColumn(
+                        min_value=1, max_value=5, step=1,
+                        help="1=거의 없음 ~ 5=매우 높음"),
+                    "심각도(1-5)": st.column_config.NumberColumn(
+                        min_value=1, max_value=5, step=1,
+                        help="1=경미 ~ 5=사망/다수 재해"),
+                    "위험요인": st.column_config.TextColumn(width="large"),
+                    "예방대책(줄바꿈 구분)": st.column_config.TextColumn(width="large"),
+                },
+            )
+            st.caption("위험도 점수·등급은 저장 시 가능성 × 심각도로 자동 재계산됩니다. "
+                       "위험요인이 비어 있는 행은 저장 시 제외됩니다.")
+
+            st.markdown("**② 작업 개요 / 개인보호구 / TBM / 체크리스트 수정**")
+            ed_overview = st.text_area(
+                "작업 개요", value=final.work_overview, height=80, key=f"ed_ov_{ver}")
+            ce1, ce2, ce3 = st.columns(3)
+            ed_ppe = ce1.text_area(
+                "개인보호구 (쉼표 또는 줄바꿈으로 구분)",
+                value=", ".join(final.ppe_list), height=140, key=f"ed_ppe_{ver}")
+            ed_tbm = ce2.text_area(
+                "작업 전 TBM (한 줄에 한 항목)",
+                value="\n".join(final.tbm), height=140, key=f"ed_tbm_{ver}")
+            ed_chk = ce3.text_area(
+                "작업 전 체크리스트 (한 줄에 한 항목)",
+                value="\n".join(final.checklist), height=140, key=f"ed_chk_{ver}")
+
+            if st.button(":material/save: 수정 내용 적용", type="primary",
+                         key="btn_apply_edit", width="stretch"):
+                hazards = []
+                for _, row in edited_df.iterrows():
+                    if not str(row.get("위험요인") or "").strip():
+                        continue  # 위험요인이 빈 행은 제외
+                    hazards.append({
+                        "step": str(row.get("작업 단계") or "").strip(),
+                        "category": str(row.get("분류") or "기타").strip() or "기타",
+                        "hazard": str(row.get("위험요인") or "").strip(),
+                        "cause": str(row.get("원인") or "").strip(),
+                        "damage": str(row.get("예상 피해") or "").strip(),
+                        "likelihood": row.get("가능성(1-5)"),
+                        "severity": row.get("심각도(1-5)"),
+                        "measures": [m.strip() for m in
+                                     str(row.get("예방대책(줄바꿈 구분)") or "").splitlines()
+                                     if m.strip()],
+                        "ppe": [p.strip() for p in
+                                str(row.get("개인보호구(쉼표 구분)") or "").replace("\n", ",").split(",")
+                                if p.strip()],
+                    })
+                # Pydantic 재검증: 1~5 범위 강제, 위험도 점수는 Python이 재계산
+                new_final = AssessmentResult.model_validate({
+                    "work_overview": ed_overview.strip(),
+                    "work_steps": final.work_steps,
+                    "hazards": hazards,
+                    "ppe_list": [p.strip() for p in ed_ppe.replace("\n", ",").split(",") if p.strip()],
+                    "tbm": [l.strip() for l in ed_tbm.splitlines() if l.strip()],
+                    "checklist": [l.strip() for l in ed_chk.splitlines() if l.strip()],
+                })
+                result.review.final = new_final
+                result.edited = True
+                st.session_state.result = result
+                st.session_state.result_ver += 1  # 편집 위젯을 새 값으로 초기화
+                st.rerun()
 
     # 위험성평가 표
     st.markdown('<div class="sp-sec">위험성평가 표</div>', unsafe_allow_html=True)

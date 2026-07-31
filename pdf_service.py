@@ -148,6 +148,8 @@ def build_pdf(result: FullResult) -> bytes:
     story.append(Paragraph("SafePilot AI 위험성평가 보고서", styles["title"]))
     story.append(Spacer(1, 3 * mm))
     mode_txt = "데모 모드(샘플 데이터)" if result.is_demo else "AI 모드"
+    if result.edited:
+        mode_txt += " · 현장 책임자 수정 반영"
     story.append(Paragraph(
         f"작성 일시: {result.generated_at} | 생성 방식: {mode_txt}", styles["subtitle"]))
     story.append(Spacer(1, 2 * mm))
@@ -301,6 +303,8 @@ def build_html_report(result: FullResult) -> str:
     final = result.review.final
     esc = html.escape
     mode_txt = "데모 모드(샘플 데이터)" if result.is_demo else "AI 모드"
+    if result.edited:
+        mode_txt += " · 현장 책임자 수정 반영"
 
     hazard_rows = "".join(
         f"""<tr>

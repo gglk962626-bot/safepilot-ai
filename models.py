@@ -198,3 +198,4 @@ class FullResult(BaseModel):
     review: ReviewResult             # 2차 검토 결과 (final 포함)
     is_demo: bool = False            # 데모 모드 여부
     generated_at: str = ""           # 생성 일시 문자열
+    edited: bool = False             # 책임자가 결과를 직접 수정했는지 여부
