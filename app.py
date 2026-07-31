@@ -1,4 +1,4 @@
-"""SafePilot AI - 스스로 검토하는 위험성평가 코파일럿 (Streamlit 앱)"""
+"""SafePilot AI - 위험성평가 코파일럿 (Streamlit 앱)"""
 
 from __future__ import annotations
 
@@ -290,8 +290,7 @@ st.markdown(
     """
 <div class="sp-header">
   <span class="eyebrow">Industrial Safety AI Solution</span>
-  <h1>🦺 SafePilot AI</h1>
-  <div class="sub">스스로 검토하는 위험성평가 코파일럿</div>
+  <h1>🦺 위험성평가 코파일럿 (SafePilot AI)</h1>
   <div class="desc">
     작업 정보를 입력하면 AI가 위험성평가, 예방대책, 개인보호구, TBM, 체크리스트를 생성하고,
     2차 AI가 누락·모순을 교차검토하여 보완한 최종 결과와 PDF 보고서를 제공합니다.
