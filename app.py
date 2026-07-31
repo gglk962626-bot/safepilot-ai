@@ -434,7 +434,8 @@ if result:
         if result.is_demo
         else '<span class="sp-badge ai">실제 AI 모드 결과</span>'
     )
-    if result.edited:
+    # getattr: 배포 전 세션에 남아 있는 구버전 결과 객체(edited 필드 없음)와의 호환 처리
+    if getattr(result, "edited", False):
         mode_badge += ' <span class="sp-badge edited">책임자 수정 반영</span>'
     st.markdown(
         f'<div class="sp-sec">위험성평가 결과 {mode_badge}</div>', unsafe_allow_html=True
@@ -560,9 +561,11 @@ if result:
                     "tbm": [l.strip() for l in ed_tbm.splitlines() if l.strip()],
                     "checklist": [l.strip() for l in ed_chk.splitlines() if l.strip()],
                 })
-                result.review.final = new_final
-                result.edited = True
-                st.session_state.result = result
+                # 구버전 세션 객체와의 호환을 위해 현재 모델 클래스로 결과를 재구성한다
+                data = result.model_dump()
+                data["review"]["final"] = new_final.model_dump()
+                data["edited"] = True
+                st.session_state.result = FullResult.model_validate(data)
                 st.session_state.result_ver += 1  # 편집 위젯을 새 값으로 초기화
                 st.rerun()
 
