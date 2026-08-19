@@ -11,7 +11,10 @@ import streamlit as st
 import ai_service
 import demo_data
 import pdf_service
-from models import AssessmentResult, FullResult, RISK_COLORS, WorkInput
+from models import (
+    AssessmentResult, CATEGORY_COUNT, DEFAULT_RISK_THRESHOLD, FullResult,
+    RISK_COLORS, WorkInput, apply_threshold,
+)
 
 # ---------------------------------------------------------------------------
 # 페이지 설정 및 스타일
@@ -21,7 +24,27 @@ st.set_page_config(
     page_title="SafePilot AI - 위험성평가 코파일럿",
     page_icon="🦺",
     layout="wide",
+    initial_sidebar_state="expanded",  # 최종 위험성 판단 기준 설정이 바로 보이도록
 )
+
+# ---------------------------------------------------------------------------
+# 사이드바: 최종 위험성 판단 기준 (법정 허용기준이 아님)
+# ---------------------------------------------------------------------------
+
+with st.sidebar:
+    st.markdown("### 평가 설정")
+    risk_threshold = st.number_input(
+        "최종 위험성 판단 기준",
+        min_value=1, max_value=25,
+        value=DEFAULT_RISK_THRESHOLD, step=1,
+        help="개선 후 위험도 점수가 이 값 이하이면 '설정 기준 이내'로 표시합니다.",
+        key="risk_threshold",
+    )
+    st.caption(f"현재 기준: **{int(risk_threshold)}점 이하**")
+    st.caption(
+        "※ 본 기준은 SafePilot의 기본 설정값이며, 실제 적용 시 사업장의 "
+        "위험성평가 기준 및 현장 여건에 따라 조정할 수 있습니다."
+    )
 
 st.markdown(
     """
@@ -246,6 +269,24 @@ table.sp-table small {color: var(--sp-muted); font-size: .8em;}
   border-radius: 12px; min-height: 3rem; font-weight: 600;
 }
 
+/* ---------- 개선 전/후·검수·대책 표시 ---------- */
+.ctl-tag {
+  display: inline-block; font-size: .7rem; font-weight: 700;
+  border-radius: 5px; padding: 1px 6px; margin-right: 5px; white-space: nowrap;
+  background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;
+}
+.ctl-tag.hi {background: #ecfdf5; color: #047857; border-color: #a7f3d0;}   /* 제거·대체·공학적 */
+.mini-badge {
+  display: inline-block; font-size: .72rem; font-weight: 700;
+  border-radius: 999px; padding: 2px 9px; white-space: nowrap;
+}
+.mini-badge.over {background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;}
+.mini-badge.within {background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;}
+.mini-badge.review {background: #fffbeb; color: #b45309; border: 1px solid #fde68a;}
+table.sp-table tr.nr-row td {background: #fffbeb !important;}
+.blank-line {color: #94a3b8; letter-spacing: .05em;}
+.risk-cell-num {font-size: 1.05rem; font-weight: 800;}
+
 /* ---------- 기타 다듬기 ---------- */
 [data-testid="stAlert"] {border-radius: 10px;}
 div[data-testid="stExpander"] {border-radius: 10px;}
@@ -277,7 +318,8 @@ for key in ["in_name", "in_location", "in_description", "in_equipment", "in_work
 
 
 def load_sample():
-    s = demo_data.SAMPLE_INPUT
+    key = st.session_state.get("demo_scenario", demo_data.DEFAULT_SCENARIO)
+    s = demo_data.get_sample_input(key)
     st.session_state.in_name = s.name
     st.session_state.in_location = s.location
     st.session_state.in_description = s.description
@@ -301,7 +343,8 @@ st.markdown(
   </div>
   <div class="feat">
     <span>2단계 AI 교차검토</span>
-    <span>17개 위험범주 전수 점검</span>
+    <span>20개 위험범주 전수 점검</span>
+    <span>개선 전·후 위험성 관리</span>
     <span>TBM · 체크리스트 자동 생성</span>
     <span>PDF 보고서</span>
   </div>
@@ -342,7 +385,12 @@ with top1:
             icon="🔑",
         )
 with top2:
-    st.write("")
+    st.selectbox(
+        "샘플·데모 시나리오",
+        options=list(demo_data.SCENARIO_LABELS.keys()),
+        format_func=lambda k: demo_data.SCENARIO_LABELS[k],
+        key="demo_scenario",
+    )
     st.button(":material/content_paste: 샘플 입력 불러오기", on_click=load_sample,
               key="btn_sample", width="stretch")
 
@@ -383,11 +431,12 @@ if generate:
     else:
         try:
             if is_demo_mode:
-                # 데모 모드: 입력이 비어 있으면 샘플 입력으로 대체
-                demo_work = work if not missing else demo_data.SAMPLE_INPUT
+                # 데모 모드: 선택한 시나리오의 샘플 결과 사용 (입력이 비면 샘플 입력으로 대체)
+                scenario = st.session_state.get("demo_scenario", demo_data.DEFAULT_SCENARIO)
+                demo_work = work if not missing else demo_data.get_sample_input(scenario)
                 with st.spinner("데모 결과를 불러오는 중..."):
-                    first = demo_data.get_demo_first()
-                    review = demo_data.get_demo_review()
+                    first = demo_data.get_demo_first(scenario)
+                    review = demo_data.get_demo_review(scenario)
                 st.session_state.result = FullResult(
                     work_input=demo_work, first=first, review=review,
                     is_demo=True,
@@ -427,6 +476,13 @@ result: FullResult | None = st.session_state.result
 if result:
     final = result.review.final
     esc = html.escape
+
+    # 최종 위험성 판단 기준 적용 (improvement_required 는 코드가 산정 — AI 출력 아님)
+    try:
+        apply_threshold(final, int(risk_threshold))
+        result.threshold = int(risk_threshold)
+    except Exception:
+        pass  # 배포 전 세션에 남은 구버전 결과 객체 호환
 
     st.divider()
     mode_badge = (
@@ -470,6 +526,20 @@ if result:
             unsafe_allow_html=True,
         )
 
+    # 요약 상태 배지: 검수 필요 / 기준 초과 (코드 산정 상태)
+    nr_count = getattr(final, "needs_review_count", 0)
+    over_count = getattr(final, "improvement_required_count", 0)
+    badges = []
+    if nr_count:
+        badges.append(f'<span class="mini-badge review">⚠ 검수 필요 항목: {nr_count}건</span>')
+    if over_count:
+        badges.append(
+            f'<span class="mini-badge over">기준 초과({int(risk_threshold)}점) 항목: {over_count}건 — 작업 전 추가 개선 검토 필요</span>')
+    if not badges:
+        badges.append(
+            f'<span class="mini-badge within">모든 위험요인이 개선 후 설정 기준({int(risk_threshold)}점) 이내입니다</span>')
+    st.markdown('<div style="margin-top:8px">' + " ".join(badges) + "</div>", unsafe_allow_html=True)
+
     st.write("")
 
     # -----------------------------------------------------------------------
@@ -496,25 +566,33 @@ if result:
                 "예상 피해": h.damage,
                 "가능성(1-5)": h.likelihood,
                 "심각도(1-5)": h.severity,
-                "예방대책(줄바꿈 구분)": "\n".join(h.measures),
+                "개선후 가능성(1-5)": getattr(h, "residual_likelihood", h.likelihood),
+                "개선후 심각도(1-5)": getattr(h, "residual_severity", h.severity),
+                "감소대책([유형] 내용, 줄바꿈 구분)": "\n".join(
+                    getattr(m, "display", str(m)) for m in h.measures),
                 "개인보호구(쉼표 구분)": ", ".join(h.ppe),
+                "근거-가능성": getattr(h, "basis_likelihood", ""),
+                "근거-심각도": getattr(h, "basis_severity", ""),
             } for h in final.hazards])
+            _num_col = lambda help_txt: st.column_config.NumberColumn(  # noqa: E731
+                min_value=1, max_value=5, step=1, help=help_txt)
             edited_df = st.data_editor(
                 hazard_df,
                 num_rows="dynamic",
                 key=f"ed_hazards_{ver}",
                 column_config={
-                    "가능성(1-5)": st.column_config.NumberColumn(
-                        min_value=1, max_value=5, step=1,
-                        help="1=거의 없음 ~ 5=매우 높음"),
-                    "심각도(1-5)": st.column_config.NumberColumn(
-                        min_value=1, max_value=5, step=1,
-                        help="1=경미 ~ 5=사망/다수 재해"),
+                    "가능성(1-5)": _num_col("1=거의 없음 ~ 5=매우 높음"),
+                    "심각도(1-5)": _num_col("1=경미 ~ 5=사망/다수 재해"),
+                    "개선후 가능성(1-5)": _num_col("감소대책 이행 후 잔여 가능성"),
+                    "개선후 심각도(1-5)": _num_col("감소대책 이행 후 잔여 심각도"),
                     "위험요인": st.column_config.TextColumn(width="large"),
-                    "예방대책(줄바꿈 구분)": st.column_config.TextColumn(width="large"),
+                    "감소대책([유형] 내용, 줄바꿈 구분)": st.column_config.TextColumn(
+                        width="large",
+                        help="한 줄에 하나씩. 유형: [제거] [대체] [공학적] [관리적] [PPE] — 생략 시 관리적으로 처리"),
                 },
             )
-            st.caption("위험도 점수·등급은 저장 시 가능성 × 심각도로 자동 재계산됩니다. "
+            st.caption("위험도 점수·등급(개선 전/후)은 저장 시 가능성 × 심각도로 자동 재계산됩니다. "
+                       "개선 후 점수가 개선 전보다 높거나, 상위 대책 없이 심각도를 낮춘 행은 '검수 필요'로 표시됩니다. "
                        "위험요인이 비어 있는 행은 저장 시 제외됩니다.")
 
             st.markdown("**② 작업 개요 / 개인보호구 / TBM / 체크리스트 수정**")
@@ -545,22 +623,32 @@ if result:
                         "damage": str(row.get("예상 피해") or "").strip(),
                         "likelihood": row.get("가능성(1-5)"),
                         "severity": row.get("심각도(1-5)"),
+                        "residual_likelihood": row.get("개선후 가능성(1-5)"),
+                        "residual_severity": row.get("개선후 심각도(1-5)"),
+                        "basis_likelihood": str(row.get("근거-가능성") or "").strip(),
+                        "basis_severity": str(row.get("근거-심각도") or "").strip(),
+                        # "[제거] 내용" 형태 문자열은 ControlMeasure 검증기가 유형·내용으로 해석
                         "measures": [m.strip() for m in
-                                     str(row.get("예방대책(줄바꿈 구분)") or "").splitlines()
+                                     str(row.get("감소대책([유형] 내용, 줄바꿈 구분)") or "").splitlines()
                                      if m.strip()],
                         "ppe": [p.strip() for p in
                                 str(row.get("개인보호구(쉼표 구분)") or "").replace("\n", ",").split(",")
                                 if p.strip()],
                     })
-                # Pydantic 재검증: 1~5 범위 강제, 위험도 점수는 Python이 재계산
+                # Pydantic 재검증: 1~5 범위 강제, 위험도 점수(개선 전/후)는 Python이 재계산
                 new_final = AssessmentResult.model_validate({
                     "work_overview": ed_overview.strip(),
                     "work_steps": final.work_steps,
                     "hazards": hazards,
+                    "no_hazard_steps": [ns.model_dump() for ns in getattr(final, "no_hazard_steps", [])],
                     "ppe_list": [p.strip() for p in ed_ppe.replace("\n", ",").split(",") if p.strip()],
                     "tbm": [l.strip() for l in ed_tbm.splitlines() if l.strip()],
                     "checklist": [l.strip() for l in ed_chk.splitlines() if l.strip()],
                 })
+                # 코드 전용 검증 파이프라인 (AI 재생성 없이): 규칙 위반 행은 '검수 필요' 표시,
+                # 단계 번호 정렬·TBM 고정 항목 유지
+                ai_service.postprocess_result(result.work_input, new_final,
+                                              client=None, allow_regen=False)
                 # 구버전 세션 객체와의 호환을 위해 현재 모델 클래스로 결과를 재구성한다
                 data = result.model_dump()
                 data["review"]["final"] = new_final.model_dump()
@@ -569,32 +657,91 @@ if result:
                 st.session_state.result_ver += 1  # 편집 위젯을 새 값으로 초기화
                 st.rerun()
 
-    # 위험성평가 표
+    # 위험성평가 표 (개선 전·후 위험성 + 개선관리)
     st.markdown('<div class="sp-sec">위험성평가 표</div>', unsafe_allow_html=True)
     rows_html = ""
     for h in final.hazards:
-        color = RISK_COLORS.get(h.risk_level, "#999")
-        measures = "".join(f"<div>· {esc(m)}</div>" for m in h.measures)
+        b_color = RISK_COLORS.get(h.risk_level, "#999")
+        r_score = getattr(h, "residual_score", h.risk_score)
+        r_level = getattr(h, "residual_level", h.risk_level)
+        r_color = RISK_COLORS.get(r_level, "#999")
+        needs_review = getattr(h, "needs_review", False)
+        improvement_required = getattr(h, "improvement_required", False)
+
+        # 위험요인 셀 (분류 태그 + 원인, 검수 필요 표시 포함)
+        review_mark = (
+            '<div><span class="mini-badge review">⚠ AI 검증 미통과 — 수동 검토 필요</span></div>'
+            if needs_review else "")
+        hazard_cell = (f"{review_mark}<b>{esc(h.hazard)}</b>"
+                       f"<br><small>[{esc(h.category)}] 원인: {esc(h.cause)}</small>")
+
+        # 감소대책 셀: [위계 라벨] 대책 + PPE + 상위 수준 검토 문구
+        m_html = ""
+        for m in getattr(h, "measures", []):
+            ctype = getattr(m, "control_type", "administrative")
+            label = getattr(m, "label", "관리적")
+            desc = getattr(m, "description", str(m))
+            hi = " hi" if ctype in ("elimination", "substitution", "engineering") else ""
+            m_html += f'<div><span class="ctl-tag{hi}">{esc(label)}</span>{esc(desc)}</div>'
         ppe = ", ".join(esc(p) for p in h.ppe)
-        rows_html += f"""<tr>
+        if ppe:
+            m_html += f"<small>PPE: {ppe}</small>"
+        if getattr(h, "only_admin_ppe", lambda: False)():
+            m_html += ('<div><small>※ 상위 수준의 감소대책(제거·대체·공학적 대책) 검토 필요</small></div>')
+
+        # 개선 후 셀: 점수/등급 + 기준 판정
+        judge = ('<span class="mini-badge over">기준 초과 — 작업 전 추가 개선 검토 필요</span>'
+                 if improvement_required
+                 else '<span class="mini-badge within">설정 기준 이내</span>')
+        residual_cell = (f'<div class="risk-cell-num">{r_score}점</div>'
+                         f'<span class="risk-badge" style="background:{r_color}">{esc(r_level)}</span>'
+                         f"<div style='margin-top:4px'>{judge}</div>")
+
+        row_cls = ' class="nr-row"' if needs_review else ""
+        rows_html += f"""<tr{row_cls}>
           <td>{esc(h.step)}</td>
-          <td class="c">{esc(h.category)}</td>
-          <td><b>{esc(h.hazard)}</b><br><small>원인: {esc(h.cause)} / 피해: {esc(h.damage)}</small></td>
-          <td class="c">{h.likelihood}</td>
-          <td class="c">{h.severity}</td>
-          <td class="c"><b>{h.risk_score}</b></td>
-          <td class="c"><span class="risk-badge" style="background:{color}">{esc(h.risk_level)}</span></td>
-          <td>{measures}<small>PPE: {ppe}</small></td>
+          <td>{hazard_cell}</td>
+          <td>{esc(h.damage)}</td>
+          <td class="c"><small>가능성 {h.likelihood} · 심각도 {h.severity}</small>
+            <div class="risk-cell-num">{h.risk_score}점</div>
+            <span class="risk-badge" style="background:{b_color}">{esc(h.risk_level)}</span></td>
+          <td>{m_html}</td>
+          <td class="c">{residual_cell}</td>
+          <td><small>담당자 <span class="blank-line">______</span><br>
+            예정일 <span class="blank-line">______</span><br>
+            이행확인 <span class="blank-line">☐</span></small></td>
         </tr>"""
+
+    # 유의미한 위험요인이 없는 작업단계
+    for ns in getattr(final, "no_hazard_steps", []):
+        rows_html += f"""<tr>
+          <td>{esc(ns.step)}</td>
+          <td colspan="6"><b>유의미한 위험요인 없음</b><br><small>사유: {esc(ns.reason or "-")}</small></td>
+        </tr>"""
+
     st.markdown(
-        f"""<div class="sp-table-wrap"><table class="sp-table">
-        <tr><th>작업 단계</th><th>분류</th><th>위험요인</th><th>가능성</th><th>심각도</th>
-        <th>점수</th><th>등급</th><th>예방대책 / PPE</th></tr>
+        f"""<div class="sp-table-wrap"><table class="sp-table" style="min-width:1050px">
+        <tr><th>작업단계</th><th>위험요인</th><th>예상 피해</th><th>개선 전 위험성</th>
+        <th>감소대책</th><th>개선 후 위험성</th><th>개선관리</th></tr>
         {rows_html}</table></div>""",
         unsafe_allow_html=True,
     )
-    st.caption("위험도 점수 = 발생 가능성(1–5) × 피해 심각도(1–5) — 시스템이 직접 계산합니다. "
-               "구간: 1–4 낮음 / 5–9 보통 / 10–16 높음 / 17–25 매우 높음")
+    st.caption("위험도 점수 = 발생 가능성(1~5) × 피해 심각도(1~5), 개선 후 잔여 위험도 포함 — 모두 시스템이 직접 계산합니다. "
+               "구간: 1~4 낮음 / 5~9 보통 / 10~16 높음 / 17~25 매우 높음 · "
+               f"최종 위험성 판단 기준 {int(risk_threshold)}점 이하(사이드바에서 조정 가능). "
+               "'설정 기준 이내'는 추가 개선이 불필요하다는 의미가 아니라, 설정된 판단 기준 범위 안에 들어왔다는 의미입니다. "
+               "개선관리(담당자·예정일·이행확인)는 출력 후 수기 기입란입니다.")
+
+    # 위험요인별 판단 근거 (표 밖 별도 영역)
+    with st.expander("위험요인별 가능성·심각도 판단 근거 보기"):
+        for i, h in enumerate(final.hazards, 1):
+            bl = getattr(h, "basis_likelihood", "") or "-"
+            bs = getattr(h, "basis_severity", "") or "-"
+            st.markdown(
+                f"**{i}. {esc(h.hazard)}**\n"
+                f"- 가능성 {h.likelihood}점 — {esc(bl)}\n"
+                f"- 심각도 {h.severity}점 — {esc(bs)}")
+        st.caption("※ 위 점수는 SafePilot 자체 평가 기준(부록 수록)에 따른 것으로, 법정 단일 평가척도가 아닙니다.")
 
     # 개인보호구
     st.markdown('<div class="sp-sec">개인보호구 (PPE)</div>', unsafe_allow_html=True)
@@ -614,7 +761,7 @@ if result:
             st.markdown(f"☐ {item}")
 
     # AI 교차검토 결과 (판정별 Pill 배지: 적정=Green / 보완=Amber / 해당없음=Gray)
-    st.markdown('<div class="sp-sec">AI 교차검토 결과 (17개 위험범주 전수 점검)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sp-sec">AI 교차검토 결과 (20개 위험범주 전수 점검)</div>', unsafe_allow_html=True)
     st.markdown(
         '<p style="font-size:.83rem; color:var(--sp-muted); margin:-4px 0 10px 14px; line-height:1.5;">'
         '※ 본 내용은 최종 결과에 반영된 AI 교차검토 및 보완 과정을 확인하기 위한 검증 기록입니다.</p>',
@@ -646,6 +793,21 @@ if result:
             )
     else:
         st.markdown("검토 결과 변경사항이 없습니다.")
+
+    # 근로자 참여 (현장 기재용 — 저장 기능 없음)
+    st.markdown('<div class="sp-sec">근로자 의견</div>', unsafe_allow_html=True)
+    st.markdown(
+        """<div class="sp-table-wrap" style="padding:14px 18px">
+        <small style="color:#64748b">본 위험성평가 결과에 대한 근로자 의견을 청취하고 아래에 기재합니다. (출력 후 수기 기입란)</small>
+        <div style="margin:10px 0 14px 0; border-bottom:1px dashed #cbd5e1; height:1.4em"></div>
+        <div style="margin:0 0 14px 0; border-bottom:1px dashed #cbd5e1; height:1.4em"></div>
+        <div style="color:#334155; font-size:.9rem">
+          참여 근로자&nbsp;&nbsp; 성명 <span class="blank-line">______________</span>
+          &nbsp;&nbsp;서명 <span class="blank-line">______________</span>
+        </div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
 
     # 책임자 확인 + PDF 다운로드
     st.divider()

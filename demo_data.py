@@ -2,240 +2,69 @@
 
 API 키가 없거나 API 장애 시에도 서비스 흐름을 그대로 체험할 수 있도록
 미리 작성된 고품질 샘플 결과를 제공한다.
+
+시나리오 데이터는 assets/demo_*.json 에 새 스키마(개선 전·후 위험도,
+판단 근거, 대책 위계, 20개 위험범주)로 저장되어 있으며, 여기서 로드한다.
+
+- 데모 1 (welding): 조선소 밀폐공간 용접
+- 데모 2 (callcenter): 콜센터 상담 업무 (감정노동·폭력·상해 위험 분류 검증용)
 """
+
+from __future__ import annotations
+
+import json
+import os
 
 from models import AssessmentResult, ReviewResult, WorkInput
 
-# ---------------------------------------------------------------------------
-# 샘플 입력 (샘플 입력 불러오기 버튼용)
-# ---------------------------------------------------------------------------
+_ASSET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 
-SAMPLE_INPUT = WorkInput(
-    name="선박 블록 내부 배관 용접 작업",
-    location="OO조선소 제2도크 선체 블록 내부 (탱크 구역)",
-    description=(
-        "선박 블록 내부 탱크 구역에서 배관 연결부 아크용접 및 그라인딩 작업을 수행한다. "
-        "작업 전 배관 라인 잔류물 확인 후 용접기와 그라인더를 반입하여 "
-        "약 6시간 동안 용접, 사상, 검사 순으로 진행한다."
-    ),
-    equipment="CO2 아크용접기, 핸드그라인더, 이동식 조명, 국소배기장치, 산소농도측정기",
-    workers="용접공 2명, 화기감시자 1명, 관리감독자 1명 (총 4명)",
-    notes="블록 내부는 환기가 제한된 밀폐공간이며, 인접 구역에서 도장 작업이 병행될 수 있음",
-)
 
-# ---------------------------------------------------------------------------
-# 1차 생성 결과 (데모)
-# ---------------------------------------------------------------------------
+def _load(filename: str) -> dict:
+    path = os.path.join(_ASSET_DIR, filename)
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError as e:
+        raise FileNotFoundError(
+            f"데모 데이터 파일이 없습니다: {path} — 배포 시 assets 폴더의 demo_*.json 이 "
+            "저장소에 함께 포함되어야 합니다."
+        ) from e
 
-_FIRST = {
-    "work_overview": (
-        "선박 블록 내부 탱크 구역에서 배관 연결부를 아크용접하고 그라인딩으로 마무리하는 작업이다. "
-        "밀폐공간 내 화기작업으로, 질식·화재·감전 위험이 복합적으로 존재하여 "
-        "작업 전 가스농도 측정과 환기, 화기감시자 배치가 필수적이다."
-    ),
-    "work_steps": [
-        "1. 작업허가서 확인 및 밀폐공간 출입 전 산소·가스농도 측정",
-        "2. 환기장치 설치 및 가동, 조명·용접기 반입",
-        "3. 배관 연결부 아크용접 작업",
-        "4. 용접부 그라인딩(사상) 작업",
-        "5. 용접부 검사 및 정리정돈, 잔류 불씨 확인 후 철수",
-    ],
-    "hazards": [
-        {
-            "step": "1. 밀폐공간 출입",
-            "category": "밀폐공간",
-            "hazard": "탱크 내부 산소결핍 또는 유해가스 체류로 인한 질식",
-            "cause": "환기 불충분, 출입 전 가스농도 미측정",
-            "damage": "의식 상실, 질식 사망",
-            "likelihood": 2,
-            "severity": 5,
-            "measures": [
-                "출입 전 산소농도(18~23.5%) 및 유해가스 농도 측정 후 기록",
-                "작업 중 연속 환기 실시, 30분마다 재측정",
-                "감시인 1명 외부 배치 및 출입 인원 명부 관리",
-            ],
-            "ppe": ["산소농도측정기", "송기마스크(비상용)"],
-        },
-        {
-            "step": "3. 아크용접",
-            "category": "화재 및 폭발",
-            "hazard": "용접 불꽃 비산에 의한 인접 도장구역 인화성 증기 화재·폭발",
-            "cause": "인접 구역 도장 작업 병행, 불꽃 비산 방지 조치 미흡",
-            "damage": "화상, 폭발에 의한 다수 재해",
-            "likelihood": 3,
-            "severity": 5,
-            "measures": [
-                "화기작업허가서 발급 및 인접 도장 작업과 시간 분리",
-                "불꽃받이·방화포 설치, 반경 11m 내 가연물 제거",
-                "화기감시자 배치 및 소화기 2대 비치, 작업 후 30분 잔류 불씨 확인",
-            ],
-            "ppe": ["용접면", "방염복", "가죽장갑"],
-        },
-        {
-            "step": "3. 아크용접",
-            "category": "감전",
-            "hazard": "습윤한 블록 내부에서 용접기 충전부 접촉에 의한 감전",
-            "cause": "홀더 절연 불량, 자동전격방지기 미부착",
-            "damage": "감전 사망, 추락 2차 재해",
-            "likelihood": 3,
-            "severity": 4,
-            "measures": [
-                "자동전격방지기 부착 및 작동 확인",
-                "용접 홀더·케이블 절연 상태 작업 전 점검",
-                "젖은 장갑 착용 금지, 절연장갑·절연화 착용",
-            ],
-            "ppe": ["절연장갑", "절연화(안전화)"],
-        },
-        {
-            "step": "3~4. 용접·그라인딩",
-            "category": "유해가스 및 화학물질",
-            "hazard": "용접흄 및 금속분진 흡입에 의한 호흡기 질환",
-            "cause": "밀폐공간 내 국소배기 미가동, 방진마스크 미착용",
-            "damage": "금속열, 진폐 등 직업성 질환",
-            "likelihood": 4,
-            "severity": 3,
-            "measures": [
-                "국소배기장치를 용접 지점에 근접 설치 후 가동 상태 확인",
-                "특급 방진마스크(용접흄용) 착용",
-            ],
-            "ppe": ["방진마스크(특급)", "보안경"],
-        },
-        {
-            "step": "4. 그라인딩",
-            "category": "협착 및 끼임",
-            "hazard": "그라인더 숫돌 파손 비산 및 회전체 접촉",
-            "cause": "숫돌 균열 미점검, 보호덮개 임의 제거",
-            "damage": "안면부 열상, 손가락 절단",
-            "likelihood": 3,
-            "severity": 3,
-            "measures": [
-                "작업 전 숫돌 균열 점검 및 시운전 1분 실시",
-                "보호덮개 부착 상태 확인, 임의 제거 금지",
-            ],
-            "ppe": ["보안면", "방진장갑"],
-        },
-        {
-            "step": "2~5. 전 과정",
-            "category": "소음 및 진동",
-            "hazard": "그라인딩 소음(90dB 이상)에 의한 소음성 난청",
-            "cause": "밀폐공간 내 소음 반향, 귀마개 미착용",
-            "damage": "소음성 난청",
-            "likelihood": 4,
-            "severity": 2,
-            "measures": ["귀마개 또는 귀덮개 착용", "작업시간 조정으로 소음 노출 최소화"],
-            "ppe": ["귀마개"],
-        },
-    ],
-    "ppe_list": [
-        "안전모", "안전화(절연화)", "용접면", "보안면", "보안경",
-        "방진마스크(특급)", "방염복", "절연장갑", "귀마개", "송기마스크(비상용)",
-    ],
-    "tbm": [
-        "금일 작업은 밀폐공간 내 화기작업으로, 출입 전 산소농도 18~23.5% 확인 후 진입한다.",
-        "화기감시자는 작업 종료 후 30분간 잔류 불씨를 확인한 뒤 철수한다.",
-        "용접기 자동전격방지기 작동 여부를 작업 전 반드시 확인한다.",
-        "인접 도장 작업 여부를 관리감독자에게 확인하고, 병행 시 작업을 중지한다.",
-        "몸 상태가 좋지 않은 작업자는 즉시 관리감독자에게 보고한다.",
-    ],
-    "checklist": [
-        "작업허가서(밀폐공간·화기)가 발급되어 현장에 비치되어 있는가?",
-        "산소·유해가스 농도를 측정하고 기록하였는가?",
-        "환기장치와 국소배기장치가 정상 가동되는가?",
-        "자동전격방지기가 부착되고 정상 작동하는가?",
-        "소화기 2대와 방화포가 작업 지점에 비치되어 있는가?",
-        "화기감시자가 지정되어 위치를 확인하였는가?",
-        "전 작업자가 개인보호구를 착용하였는가?",
-    ],
+
+_SCENARIOS: dict[str, dict] = {
+    "welding": _load("demo_welding.json"),
+    "callcenter": _load("demo_callcenter.json"),
 }
 
-# ---------------------------------------------------------------------------
-# 2차 교차검토 결과 (데모)
-# ---------------------------------------------------------------------------
-
-_REVIEW = {
-    "findings": [
-        {"category": "추락", "status": "보완", "comment": "블록 내부 이동 시 개구부·단차 전도/추락 위험이 초안에 누락되어 위험요인을 추가함."},
-        {"category": "낙하 및 비래", "status": "적정", "comment": "그라인딩 비산 위험이 반영되어 있음."},
-        {"category": "협착 및 끼임", "status": "적정", "comment": "그라인더 회전체 위험이 반영되어 있음."},
-        {"category": "충돌", "status": "해당없음", "comment": "중장비·차량 이동이 없는 블록 내부 작업으로 관련성 낮음."},
-        {"category": "전도", "status": "보완", "comment": "케이블·호스 정리 미흡에 의한 전도 위험을 체크리스트에 추가함."},
-        {"category": "감전", "status": "적정", "comment": "자동전격방지기·절연 점검이 적절히 반영됨."},
-        {"category": "화재 및 폭발", "status": "적정", "comment": "화기감시자·잔류 불씨 확인까지 반영되어 적정함."},
-        {"category": "유해가스 및 화학물질", "status": "적정", "comment": "용접흄 대책이 반영되어 있음."},
-        {"category": "소음 및 진동", "status": "적정", "comment": "귀마개 착용이 반영되어 있음."},
-        {"category": "근골격계 부담", "status": "보완", "comment": "협소 공간 내 불안정한 자세 용접에 대한 스트레칭·교대작업 TBM 항목을 추가함."},
-        {"category": "고온 및 저온", "status": "보완", "comment": "여름철 밀폐공간 내 온열질환 예방(수분 섭취, 휴식) 항목을 TBM에 추가함."},
-        {"category": "차량 및 중장비", "status": "해당없음", "comment": "본 작업 범위에 차량·중장비 운용이 없음."},
-        {"category": "밀폐공간", "status": "적정", "comment": "산소농도 측정, 감시인 배치가 반영되어 적정함."},
-        {"category": "작업자 간 의사소통", "status": "보완", "comment": "내부 작업자-외부 감시인 간 무전기 교신 체계가 누락되어 추가함."},
-        {"category": "작업구역 통제", "status": "보완", "comment": "블록 출입구 통제 표지 및 관계자 외 출입금지 조치를 체크리스트에 추가함."},
-        {"category": "작업허가", "status": "적정", "comment": "밀폐공간·화기 작업허가서 확인이 반영되어 있음."},
-        {"category": "개인보호구", "status": "적정", "comment": "장비(용접기·그라인더)와 PPE 구성이 일치함."},
-    ],
-    "changes": [
-        {"action": "추가", "target": "위험요인", "description": "블록 내부 개구부·단차 통행 중 전도 및 추락 위험요인 추가 (덮개 설치, 조도 확보 대책 포함)"},
-        {"action": "추가", "target": "TBM", "description": "내부 작업자와 외부 감시인 간 10분 주기 무전 교신 규칙 추가"},
-        {"action": "추가", "target": "TBM", "description": "협소 공간 작업 전 스트레칭 및 2시간마다 교대·휴식 실시 추가"},
-        {"action": "추가", "target": "TBM", "description": "온열질환 예방을 위한 수분 섭취 및 휴식시간 준수 추가"},
-        {"action": "추가", "target": "체크리스트", "description": "용접 케이블·환기 호스 통로 정리 상태 점검 항목 추가"},
-        {"action": "추가", "target": "체크리스트", "description": "블록 출입구 통제 표지 설치 및 무전기 교신 상태 확인 항목 추가"},
-        {"action": "수정", "target": "개인보호구", "description": "전체 PPE 목록에 무전기(통신장비) 명시"},
-    ],
+SCENARIO_LABELS = {
+    "welding": "조선소 밀폐공간 용접",
+    "callcenter": "콜센터 상담 업무",
 }
-
-# 검토 후 최종본: 1차 결과에 보완사항이 반영된 형태
-_FINAL = {
-    "work_overview": _FIRST["work_overview"],
-    "work_steps": _FIRST["work_steps"],
-    "hazards": _FIRST["hazards"]
-    + [
-        {
-            "step": "2~5. 전 과정",
-            "category": "추락",
-            "hazard": "블록 내부 개구부·단차 통행 중 전도 및 하부 추락",
-            "cause": "개구부 덮개 미설치, 내부 조도 부족",
-            "damage": "골절, 추락에 의한 중상",
-            "likelihood": 3,
-            "severity": 4,
-            "measures": [
-                "개구부 덮개 설치 및 '개구부 주의' 표지 부착",
-                "이동식 조명으로 통로 조도 75lux 이상 확보",
-                "케이블·호스는 통로 가장자리로 정리하여 걸림 방지",
-            ],
-            "ppe": ["안전모", "안전화"],
-        },
-        {
-            "step": "3~4. 용접·그라인딩",
-            "category": "근골격계 부담",
-            "hazard": "협소 공간 내 쪼그림·불안정 자세 장시간 작업으로 인한 근골격계 부담",
-            "cause": "협소한 작업공간, 연속 작업",
-            "damage": "요통, 근골격계 질환",
-            "likelihood": 4,
-            "severity": 2,
-            "measures": ["작업 전 스트레칭 실시", "2시간마다 교대 및 휴식"],
-            "ppe": ["무릎보호대"],
-        },
-    ],
-    "ppe_list": _FIRST["ppe_list"] + ["무릎보호대", "무전기(통신장비)"],
-    "tbm": _FIRST["tbm"]
-    + [
-        "내부 작업자와 외부 감시인은 10분 주기로 무전 교신하고, 무응답 시 즉시 진입 구조 절차를 가동한다.",
-        "협소 공간 작업 전 스트레칭을 실시하고 2시간마다 교대·휴식한다.",
-        "온열질환 예방을 위해 수분을 충분히 섭취하고 휴식시간을 준수한다.",
-    ],
-    "checklist": _FIRST["checklist"]
-    + [
-        "용접 케이블과 환기 호스가 통행에 지장 없도록 정리되어 있는가?",
-        "블록 출입구에 통제 표지가 설치되고 무전기 교신 상태를 확인하였는가?",
-    ],
-}
+DEFAULT_SCENARIO = "welding"
 
 
-def get_demo_first() -> AssessmentResult:
+def get_sample_input(key: str = DEFAULT_SCENARIO) -> WorkInput:
+    """시나리오의 샘플 작업 정보를 반환한다."""
+    return WorkInput.model_validate(_SCENARIOS[key]["sample_input"])
+
+
+def get_demo_first(key: str = DEFAULT_SCENARIO) -> AssessmentResult:
     """데모용 1차 결과를 Pydantic 모델로 반환한다."""
-    return AssessmentResult.model_validate(_FIRST)
+    return AssessmentResult.model_validate(_SCENARIOS[key]["first"])
 
 
-def get_demo_review() -> ReviewResult:
+def get_demo_review(key: str = DEFAULT_SCENARIO) -> ReviewResult:
     """데모용 2차 검토 결과를 Pydantic 모델로 반환한다."""
-    return ReviewResult.model_validate({**_REVIEW, "final": _FINAL})
+    d = _SCENARIOS[key]
+    return ReviewResult.model_validate(
+        {"findings": d["findings"], "changes": d["changes"], "final": d["final"]}
+    )
+
+
+# --- 하위 호환 (기존 코드·테스트가 참조하는 이름) ---
+SAMPLE_INPUT = get_sample_input()
+_FIRST = _SCENARIOS["welding"]["first"]
+_REVIEW = {"findings": _SCENARIOS["welding"]["findings"],
+           "changes": _SCENARIOS["welding"]["changes"]}
+_FINAL = _SCENARIOS["welding"]["final"]
