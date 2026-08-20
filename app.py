@@ -430,23 +430,36 @@ _preview = WorkInput(
 )
 _review = input_check.review_input(_preview)
 if _review["has_input"]:
-    if _review["traits"] or _review["general"]:
+    if _review["unconfirmed_count"] > 0 or _review["general"]:
         st.markdown(
-            '<div class="sp-check warn"><b>입력정보 확인</b> — ⚠ 추가 확인 권장 정보가 있습니다. '
-            "작업 특성에 따라 아래 정보를 확인하면 위험성평가의 현장 적합성을 높일 수 있습니다. "
+            '<div class="sp-check warn"><b>입력정보 확인</b> — ⚠ 추가 확인 권장 정보 '
+            f'{_review["unconfirmed_count"]}건이 있습니다. '
+            "아직 입력에서 확인되지 않은 정보를 보완하면 목록에서 자동으로 빠집니다. "
             "<small>(안내일 뿐이며, 현재 정보 그대로도 생성할 수 있습니다)</small></div>",
             unsafe_allow_html=True,
         )
-        with st.expander("추가 확인 권장 정보 보기"):
+        with st.expander("추가 확인 권장 정보 보기", expanded=True):
             for note in _review["general"]:
                 st.markdown(f"- {note}")
             for trait in _review["traits"]:
+                if not trait["items"]:
+                    continue
                 st.markdown(f"**{trait['label']}**")
                 st.markdown("\n".join(f"- {item}" for item in trait["items"]))
+            if _review["confirmed_count"]:
+                st.caption(
+                    f"이미 입력에서 확인된 권장 항목 {_review['confirmed_count']}건은 "
+                    "제외했습니다."
+                )
     else:
+        _done = (
+            f' <small>(작업 특성 권장 확인 정보 {_review["confirmed_count"]}건이 '
+            "모두 입력에서 확인되었습니다)</small>"
+            if _review["confirmed_count"] else ""
+        )
         st.markdown(
             '<div class="sp-check ok"><b>입력정보 확인</b> — ✅ 현재 입력정보로 '
-            "위험성평가를 시작할 수 있습니다.</div>",
+            f"위험성평가를 시작할 수 있습니다.{_done}</div>",
             unsafe_allow_html=True,
         )
 
