@@ -164,10 +164,15 @@ check("[8] 관리·PPE만 구성 감지 (상위 수준 검토 문구용)",
       and ok1.only_admin_ppe() is False)
 
 # ===========================================================================
-# 9. 판단 근거 생성
+# 9. 판단 근거 생성 (개선 전 + 개선 후)
 # ===========================================================================
 check("[9] 데모 전 항목 basis_likelihood/severity 존재",
       all(h.basis_likelihood.strip() and h.basis_severity.strip() for h in all_h))
+check("[9] 데모 전 항목 개선 후 판단 근거(residual_basis_*) 존재",
+      all(getattr(h, "residual_basis_likelihood", "").strip()
+          and getattr(h, "residual_basis_severity", "").strip() for h in all_h))
+check("[9] AI 스키마에 개선 후 근거 필드 포함 (프롬프트)",
+      "residual_basis_likelihood" in __import__("prompts").FIRST_PASS_SYSTEM)
 
 # ===========================================================================
 # 10~12. 검수 필요 표시·TBM 고정 항목·PDF 생성

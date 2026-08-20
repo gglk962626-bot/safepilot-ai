@@ -48,7 +48,9 @@ _HAZARD_SCHEMA = """{
       ],
       "ppe": ["안전모", "안전대"],
       "residual_likelihood": 1,
-      "residual_severity": 4
+      "residual_severity": 4,
+      "residual_basis_likelihood": "개선 후 가능성 점수 판단 근거 1문장",
+      "residual_basis_severity": "개선 후 심각도 점수 판단 근거 1문장"
     }"""
 
 _COMMON_RULES = f"""공통 작성 규칙:
@@ -56,8 +58,13 @@ _COMMON_RULES = f"""공통 작성 규칙:
    점수는 아래 SafePilot 자체 평가 기준에 따라 판단한다.
 {CRITERIA_TEXT}
 2. risk_score, risk_level, improvement_required, needs_review 는 절대 출력하지 않는다. 시스템이 계산한다.
-3. basis_likelihood / basis_severity 는 각 1문장으로, 왜 그 점수인지 근거를 쓴다.
+3. basis_likelihood / basis_severity 는 각 1문장으로, 개선 전 점수를 왜 그렇게 판단했는지 근거를 쓴다.
    (예: "작업 중 해당 유해요인에 반복적으로 노출될 가능성이 있어 높게 평가함")
+   residual_basis_likelihood / residual_basis_severity 는 각 1문장으로, 감소대책이 적용된 이후
+   가능성·심각도를 왜 그 값으로 판단했는지 쓴다. 점수를 단순 반복하지 말고,
+   - 개선 전과 값이 달라졌다면: 어떤 대책이 무엇을 낮추는지 변화 이유를 설명하고,
+   - 값이 유지되었다면: 왜 유지되는지(예: 대책이 노출 가능성은 낮추지만 사고 발생 시
+     피해 결과 자체는 줄이지 못함)를 설명한다.
 4. measures(감소대책)의 control_type 은 다음 5가지 영문 값만 사용한다: {_CONTROL_TEXT}
    - elimination(제거) / substitution(대체) / engineering(공학적) / administrative(관리적) / ppe(보호구)
 5. 개선 후(residual) 위험도 작성 원칙:

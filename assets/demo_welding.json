@@ -34,7 +34,9 @@
         ],
         "ppe": ["산소농도측정기", "송기마스크(비상용)"],
         "residual_likelihood": 1,
-        "residual_severity": 5
+        "residual_severity": 5,
+        "residual_basis_likelihood": "작업 전·작업 중 연속 강제 환기와 30분 주기 농도 재측정, 외부 감시인 배치로 산소결핍 상태에서 출입하거나 작업할 가능성이 크게 낮아진다.",
+        "residual_basis_severity": "환기와 농도 측정은 노출 가능성을 낮추는 대책일 뿐, 산소결핍 환경에 일단 노출되면 수 분 내 질식 사망에 이르는 결과 자체는 달라지지 않아 기존 심각도를 유지한다."
       },
       {
         "step": "3. 아크용접",
@@ -53,7 +55,9 @@
         ],
         "ppe": ["용접면", "방염복", "가죽장갑"],
         "residual_likelihood": 1,
-        "residual_severity": 4
+        "residual_severity": 4,
+        "residual_basis_likelihood": "인접 도장 작업과의 시간 분리로 인화성 증기 발생 자체를 차단하고 방화포 설치·가연물 제거를 병행하여 용접 불꽃과 인화물이 접촉할 경로가 사실상 제거된다.",
+        "residual_basis_severity": "반경 11m 내 가연물 제거와 소화기 비치·화기감시자 상주로 발화하더라도 초기 진화가 가능해져 다수 사상의 폭발보다는 국소 화상 수준으로 피해 규모가 완화된다."
       },
       {
         "step": "3. 아크용접",
@@ -72,7 +76,9 @@
         ],
         "ppe": ["절연장갑", "절연화(안전화)"],
         "residual_likelihood": 1,
-        "residual_severity": 3
+        "residual_severity": 3,
+        "residual_basis_likelihood": "자동전격방지기 부착과 작업 전 절연 점검, 절연장갑·절연화 착용으로 충전부에 인체가 접촉할 가능성이 크게 낮아진다.",
+        "residual_basis_severity": "자동전격방지기가 무부하 시 출력전압을 안전전압 수준으로 제한하므로 접촉이 발생하더라도 심실세동에 이르는 전격 강도가 줄어 사망보다는 상해 수준으로 피해가 완화된다."
       },
       {
         "step": "3~4. 용접·그라인딩",
@@ -90,7 +96,9 @@
         ],
         "ppe": ["방진마스크(특급)", "보안경"],
         "residual_likelihood": 2,
-        "residual_severity": 3
+        "residual_severity": 3,
+        "residual_basis_likelihood": "국소배기장치를 용접 지점 30cm 이내에 근접 설치해 흄을 발생원에서 제거하고 특급 방진마스크 착용을 병행하여 노출기준 초과 가능성이 낮아진다.",
+        "residual_basis_severity": "배기와 마스크는 흡입량을 줄이는 대책으로, 노출이 누적될 경우 금속열·진폐 등 직업성 질환으로 이어지는 피해 수준 자체는 줄이지 못해 기존 심각도를 유지한다."
       },
       {
         "step": "4. 그라인딩",
@@ -108,7 +116,9 @@
         ],
         "ppe": ["보안면", "방진장갑"],
         "residual_likelihood": 1,
-        "residual_severity": 3
+        "residual_severity": 3,
+        "residual_basis_likelihood": "보호덮개 부착 상태 확인과 작업 전 숫돌 균열 점검·1분 이상 시운전으로 숫돌 파손이나 회전체 접촉으로 이어지는 발생 경로가 사전에 차단된다.",
+        "residual_basis_severity": "점검·덮개 확인은 발생 가능성을 낮추는 대책으로, 실제 파편 비산이나 회전체 접촉이 일어나면 열상·절단 등 상해 정도는 그대로여서 기존 심각도를 유지한다."
       },
       {
         "step": "2~5. 전 과정",
@@ -126,7 +136,9 @@
         ],
         "ppe": ["귀마개"],
         "residual_likelihood": 2,
-        "residual_severity": 2
+        "residual_severity": 2,
+        "residual_basis_likelihood": "NRR 25 이상 귀마개 착용으로 유효 노출 수준을 낮추고 연속 작업 1시간 제한으로 노출 시간까지 줄여 난청을 유발할 수준의 소음에 노출될 가능성이 낮아진다.",
+        "residual_basis_severity": "보호구와 노출시간 조정은 노출량을 줄일 뿐 소음성 난청이라는 만성 질환의 피해 성격 자체를 바꾸지는 못해 기존 심각도를 유지한다."
       }
     ],
     "no_hazard_steps": [],
@@ -210,7 +222,9 @@
         ],
         "ppe": ["산소농도측정기", "송기마스크(비상용)"],
         "residual_likelihood": 1,
-        "residual_severity": 5
+        "residual_severity": 5,
+        "residual_basis_likelihood": "작업 전·작업 중 연속 강제 환기와 30분 주기 농도 재측정, 외부 감시인 배치로 산소결핍 상태에서 출입하거나 작업할 가능성이 크게 낮아진다.",
+        "residual_basis_severity": "환기와 농도 측정은 노출 가능성을 낮추는 대책일 뿐, 산소결핍 환경에 일단 노출되면 수 분 내 질식 사망에 이르는 결과 자체는 달라지지 않아 기존 심각도를 유지한다."
       },
       {
         "step": "3. 아크용접",
@@ -229,7 +243,9 @@
         ],
         "ppe": ["용접면", "방염복", "가죽장갑"],
         "residual_likelihood": 1,
-        "residual_severity": 4
+        "residual_severity": 4,
+        "residual_basis_likelihood": "인접 도장 작업과의 시간 분리로 인화성 증기 발생 자체를 차단하고 방화포 설치·가연물 제거를 병행하여 용접 불꽃과 인화물이 접촉할 경로가 사실상 제거된다.",
+        "residual_basis_severity": "반경 11m 내 가연물 제거와 소화기 비치·화기감시자 상주로 발화하더라도 초기 진화가 가능해져 다수 사상의 폭발보다는 국소 화상 수준으로 피해 규모가 완화된다."
       },
       {
         "step": "3. 아크용접",
@@ -248,7 +264,9 @@
         ],
         "ppe": ["절연장갑", "절연화(안전화)"],
         "residual_likelihood": 1,
-        "residual_severity": 3
+        "residual_severity": 3,
+        "residual_basis_likelihood": "자동전격방지기 부착과 작업 전 절연 점검, 절연장갑·절연화 착용으로 충전부에 인체가 접촉할 가능성이 크게 낮아진다.",
+        "residual_basis_severity": "자동전격방지기가 무부하 시 출력전압을 안전전압 수준으로 제한하므로 접촉이 발생하더라도 심실세동에 이르는 전격 강도가 줄어 사망보다는 상해 수준으로 피해가 완화된다."
       },
       {
         "step": "3~4. 용접·그라인딩",
@@ -266,7 +284,9 @@
         ],
         "ppe": ["방진마스크(특급)", "보안경"],
         "residual_likelihood": 2,
-        "residual_severity": 3
+        "residual_severity": 3,
+        "residual_basis_likelihood": "국소배기장치를 용접 지점 30cm 이내에 근접 설치해 흄을 발생원에서 제거하고 특급 방진마스크 착용을 병행하여 노출기준 초과 가능성이 낮아진다.",
+        "residual_basis_severity": "배기와 마스크는 흡입량을 줄이는 대책으로, 노출이 누적될 경우 금속열·진폐 등 직업성 질환으로 이어지는 피해 수준 자체는 줄이지 못해 기존 심각도를 유지한다."
       },
       {
         "step": "4. 그라인딩",
@@ -284,7 +304,9 @@
         ],
         "ppe": ["보안면", "방진장갑"],
         "residual_likelihood": 1,
-        "residual_severity": 3
+        "residual_severity": 3,
+        "residual_basis_likelihood": "보호덮개 부착 상태 확인과 작업 전 숫돌 균열 점검·1분 이상 시운전으로 숫돌 파손이나 회전체 접촉으로 이어지는 발생 경로가 사전에 차단된다.",
+        "residual_basis_severity": "점검·덮개 확인은 발생 가능성을 낮추는 대책으로, 실제 파편 비산이나 회전체 접촉이 일어나면 열상·절단 등 상해 정도는 그대로여서 기존 심각도를 유지한다."
       },
       {
         "step": "2~5. 전 과정",
@@ -302,7 +324,9 @@
         ],
         "ppe": ["귀마개"],
         "residual_likelihood": 2,
-        "residual_severity": 2
+        "residual_severity": 2,
+        "residual_basis_likelihood": "NRR 25 이상 귀마개 착용으로 유효 노출 수준을 낮추고 연속 작업 1시간 제한으로 노출 시간까지 줄여 난청을 유발할 수준의 소음에 노출될 가능성이 낮아진다.",
+        "residual_basis_severity": "보호구와 노출시간 조정은 노출량을 줄일 뿐 소음성 난청이라는 만성 질환의 피해 성격 자체를 바꾸지는 못해 기존 심각도를 유지한다."
       },
       {
         "step": "2~5. 전 과정",
@@ -321,7 +345,9 @@
         ],
         "ppe": ["안전모", "안전화"],
         "residual_likelihood": 1,
-        "residual_severity": 4
+        "residual_severity": 4,
+        "residual_basis_likelihood": "개구부 덮개 설치·고정과 통로 조도 75lux 이상 확보, 케이블·호스 정리로 실족과 하부 추락으로 이어지는 요인이 대부분 제거된다.",
+        "residual_basis_severity": "덮개·조명은 추락 발생 가능성을 낮추는 대책이며, 개구부 하부로 추락할 경우의 낙하 높이와 골절 등 중상 수준의 피해는 변하지 않아 기존 심각도를 유지한다."
       },
       {
         "step": "3~4. 용접·그라인딩",
@@ -339,7 +365,9 @@
         ],
         "ppe": ["무릎보호대"],
         "residual_likelihood": 2,
-        "residual_severity": 2
+        "residual_severity": 2,
+        "residual_basis_likelihood": "작업 전 스트레칭과 2시간마다 교대·휴식으로 불안정 자세를 연속 유지하는 시간이 줄어 부담이 누적될 가능성이 낮아진다.",
+        "residual_basis_severity": "교대·무릎보호대는 부담의 빈도를 줄이는 관리적·보호구 대책으로, 누적 시 만성 요통으로 이어지는 질환 특성 자체는 변하지 않아 기존 심각도를 유지한다."
       }
     ],
     "no_hazard_steps": [],

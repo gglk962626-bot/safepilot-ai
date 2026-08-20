@@ -573,6 +573,8 @@ if result:
                 "개인보호구(쉼표 구분)": ", ".join(h.ppe),
                 "근거-가능성": getattr(h, "basis_likelihood", ""),
                 "근거-심각도": getattr(h, "basis_severity", ""),
+                "근거-개선후 가능성": getattr(h, "residual_basis_likelihood", ""),
+                "근거-개선후 심각도": getattr(h, "residual_basis_severity", ""),
             } for h in final.hazards])
             _num_col = lambda help_txt: st.column_config.NumberColumn(  # noqa: E731
                 min_value=1, max_value=5, step=1, help=help_txt)
@@ -627,6 +629,8 @@ if result:
                         "residual_severity": row.get("개선후 심각도(1-5)"),
                         "basis_likelihood": str(row.get("근거-가능성") or "").strip(),
                         "basis_severity": str(row.get("근거-심각도") or "").strip(),
+                        "residual_basis_likelihood": str(row.get("근거-개선후 가능성") or "").strip(),
+                        "residual_basis_severity": str(row.get("근거-개선후 심각도") or "").strip(),
                         # "[제거] 내용" 형태 문자열은 ControlMeasure 검증기가 유형·내용으로 해석
                         "measures": [m.strip() for m in
                                      str(row.get("감소대책([유형] 내용, 줄바꿈 구분)") or "").splitlines()
@@ -733,14 +737,27 @@ if result:
                "개선관리(담당자·예정일·이행확인)는 출력 후 수기 기입란입니다.")
 
     # 위험요인별 판단 근거 (표 밖 별도 영역)
-    with st.expander("위험요인별 가능성·심각도 판단 근거 보기"):
+    # - 이 탭의 역할은 "왜 개선 전/후 점수가 그렇게 판단되었는가"의 설명이다.
+    # - 감소대책은 메인 위험성평가표에 이미 표시되므로 여기서 중복 표시하지 않는다.
+    with st.expander("위험요인별 위험성 판단 근거 보기"):
         for i, h in enumerate(final.hazards, 1):
             bl = getattr(h, "basis_likelihood", "") or "-"
             bs = getattr(h, "basis_severity", "") or "-"
+            rbl = getattr(h, "residual_basis_likelihood", "") or "-"
+            rbs = getattr(h, "residual_basis_severity", "") or "-"
+            r_l = getattr(h, "residual_likelihood", h.likelihood)
+            r_s = getattr(h, "residual_severity", h.severity)
+            if i > 1:
+                st.markdown("---")
+            st.markdown(f"**{i}. {esc(h.hazard)}**")
             st.markdown(
-                f"**{i}. {esc(h.hazard)}**\n"
+                f"**개선 전 판단**\n"
                 f"- 가능성 {h.likelihood}점 — {esc(bl)}\n"
                 f"- 심각도 {h.severity}점 — {esc(bs)}")
+            st.markdown(
+                f"**개선 후 판단**\n"
+                f"- 가능성 {r_l}점 — {esc(rbl)}\n"
+                f"- 심각도 {r_s}점 — {esc(rbs)}")
         st.caption("※ 위 점수는 SafePilot 자체 평가 기준(부록 수록)에 따른 것으로, 법정 단일 평가척도가 아닙니다.")
 
     # 개인보호구

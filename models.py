@@ -161,8 +161,10 @@ class HazardItem(BaseModel):
     residual_likelihood: int = Field(default=3, description="개선 후 발생 가능성 (1~5)")
     residual_severity: int = Field(default=3, description="개선 후 피해 심각도 (1~5)")
     # --- 판단 근거: AI 생성 (각 1문장) ---
-    basis_likelihood: str = Field(default="", description="발생 가능성 판단 근거")
-    basis_severity: str = Field(default="", description="피해 심각도 판단 근거")
+    basis_likelihood: str = Field(default="", description="발생 가능성 판단 근거 (개선 전)")
+    basis_severity: str = Field(default="", description="피해 심각도 판단 근거 (개선 전)")
+    residual_basis_likelihood: str = Field(default="", description="개선 후 발생 가능성 판단 근거")
+    residual_basis_severity: str = Field(default="", description="개선 후 피해 심각도 판단 근거")
     # --- 코드 산정 상태값: AI 응답 스키마에서 제외되며 코드가 세팅한다 ---
     improvement_required: bool = Field(default=False, description="기준 초과 여부 (코드 산정)")
     needs_review: bool = Field(default=False, description="AI 검증 미통과 — 수동 검토 필요 (코드 산정)")
