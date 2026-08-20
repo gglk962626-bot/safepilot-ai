@@ -10,6 +10,7 @@ import streamlit as st
 
 import ai_service
 import demo_data
+import input_check
 import pdf_service
 from models import (
     AssessmentResult, CATEGORY_COUNT, DEFAULT_RISK_THRESHOLD, FullResult,
@@ -269,6 +270,15 @@ table.sp-table small {color: var(--sp-muted); font-size: .8em;}
   border-radius: 12px; min-height: 3rem; font-weight: 600;
 }
 
+/* ---------- 입력정보 확인 안내 (권장 안내 톤 — 오류 아님) ---------- */
+.sp-check {
+  border-radius: 10px; padding: 10px 16px; font-size: .875rem;
+  line-height: 1.55; margin: 4px 0 10px 0; border: 1px solid var(--sp-border);
+}
+.sp-check.ok {background: #f4f9f6; border-color: #cde5d8; color: #2f6b4f;}
+.sp-check.warn {background: #fdfaf3; border-color: #ecdfc0; color: #7a6234;}
+.sp-check small {color: #94a3b8;}
+
 /* ---------- 개선 전/후·검수·대책 표시 ---------- */
 .ctl-tag {
   display: inline-block; font-size: .7rem; font-weight: 700;
@@ -405,6 +415,40 @@ with c2:
     st.text_input("작업 인원", key="in_workers", placeholder="예: 용접공 2명, 감시자 1명")
     st.text_area("특이사항", key="in_notes", height=120,
                  placeholder="예: 밀폐공간, 인접 도장 작업 병행, 야간 작업 등")
+
+# ---------------------------------------------------------------------------
+# 입력정보 확인 (로컬 규칙 기반 안내 — Gemini 호출 없음, 생성을 차단하지 않음)
+# ---------------------------------------------------------------------------
+
+_preview = WorkInput(
+    name=st.session_state.in_name,
+    location=st.session_state.in_location,
+    description=st.session_state.in_description,
+    equipment=st.session_state.in_equipment,
+    workers=st.session_state.in_workers,
+    notes=st.session_state.in_notes,
+)
+_review = input_check.review_input(_preview)
+if _review["has_input"]:
+    if _review["traits"] or _review["general"]:
+        st.markdown(
+            '<div class="sp-check warn"><b>입력정보 확인</b> — ⚠ 추가 확인 권장 정보가 있습니다. '
+            "작업 특성에 따라 아래 정보를 확인하면 위험성평가의 현장 적합성을 높일 수 있습니다. "
+            "<small>(안내일 뿐이며, 현재 정보 그대로도 생성할 수 있습니다)</small></div>",
+            unsafe_allow_html=True,
+        )
+        with st.expander("추가 확인 권장 정보 보기"):
+            for note in _review["general"]:
+                st.markdown(f"- {note}")
+            for trait in _review["traits"]:
+                st.markdown(f"**{trait['label']}**")
+                st.markdown("\n".join(f"- {item}" for item in trait["items"]))
+    else:
+        st.markdown(
+            '<div class="sp-check ok"><b>입력정보 확인</b> — ✅ 현재 입력정보로 '
+            "위험성평가를 시작할 수 있습니다.</div>",
+            unsafe_allow_html=True,
+        )
 
 generate = st.button(
     ":material/fact_check: 위험성평가 생성 및 2차 교차검토 시작",
