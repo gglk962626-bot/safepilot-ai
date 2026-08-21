@@ -104,8 +104,6 @@ def build_pdf(result: FullResult) -> bytes:
         HRFlowable, Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
     )
 
-    import prompts  # SafePilot 자체 평가 기준표 (부록 출력용)
-
     regular_path, bold_path = find_korean_font()
     if not regular_path:
         raise RuntimeError("사용 가능한 한글 폰트를 찾지 못했습니다.")
@@ -298,6 +296,10 @@ def build_pdf(result: FullResult) -> bytes:
         ("ALIGN", (5, 1), (5, -1), "CENTER"),
         ("TOPPADDING", (0, 0), (-1, -1), 3),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        # 개선 전 위험성 열: '가능성 n · 심각도 n'이 한 줄에 들어가도록 좌우 여백 축소
+        # (해당 문자열 폭 69.8pt > 기본 여백 6pt 시 가용 64.5pt → 2pt 여백으로 72.5pt 확보)
+        ("LEFTPADDING", (3, 0), (3, -1), 2),
+        ("RIGHTPADDING", (3, 0), (3, -1), 2),
     ]
     # 개선 전/후 위험성 셀에 등급별 연한 틴트 적용
     for r, c, tint in level_cells:
@@ -419,15 +421,6 @@ def build_pdf(result: FullResult) -> bytes:
     ]))
     story.append(t)
 
-    # 부록. SafePilot 자체 평가 기준
-    story.append(Spacer(1, 5 * mm))
-    story.append(Paragraph("부록. SafePilot 자체 평가 기준 (발생가능성·피해심각도)", styles["h2"]))
-    story.append(P(prompts.CRITERIA_TEXT, "cell"))
-    story.append(Paragraph(
-        "※ 위 기준은 SafePilot이 사용하는 자체 평가 기준이며, 법정 단일 평가척도가 아닙니다. "
-        f"최종 위험성 판단 기준({threshold}점 이하)은 SafePilot의 기본 설정값으로, 실제 적용 시 "
-        "사업장의 위험성평가 기준 및 현장 여건에 따라 조정할 수 있습니다.", styles["note"]))
-
     story.append(Spacer(1, 4 * mm))
     story.append(Paragraph(
         "※ 본 문서는 SafePilot AI가 생성한 초안으로, 법적 효력을 갖는 확정 문서가 아닙니다. "
@@ -443,8 +436,6 @@ def build_pdf(result: FullResult) -> bytes:
 
 def build_html_report(result: FullResult) -> str:
     """브라우저에서 열어 인쇄(PDF 저장)할 수 있는 HTML 보고서를 생성한다."""
-    import prompts
-
     w = result.work_input
     final = result.review.final
     esc = html.escape
@@ -585,10 +576,6 @@ pre{{font-family:inherit;white-space:pre-wrap;background:#f6f8fb;border:1px soli
 <tr><th>성명 / 서명</th><td style="height:30px"></td></tr>
 <tr><th>확인 일자</th><td style="height:30px"></td></tr>
 </table>
-
-<h2>부록. SafePilot 자체 평가 기준</h2>
-<pre>{esc(prompts.CRITERIA_TEXT)}</pre>
-<p style="font-size:12px;color:#64748b">※ 위 기준은 SafePilot이 사용하는 자체 평가 기준이며, 법정 단일 평가척도가 아닙니다.</p>
 
 <p class="warn" style="margin-top:20px">※ 본 문서는 SafePilot AI가 생성한 초안으로, 법적 효력을 갖는 확정 문서가 아닙니다.
 현장 책임자의 검토와 최종 확인 후 사용하시기 바랍니다.</p>

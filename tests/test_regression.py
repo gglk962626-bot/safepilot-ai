@@ -191,7 +191,8 @@ try:
     check("[10] PDF에 검수 필요 표시", "검수 필요" in text and "AI 검증 미통과" in text)
     check("[10] PDF 요약부에 검수 필요 건수", "검수 필요 항목: 1건" in text)
     check("[6] PDF에 20개 위험범주 문구", "20개 위험범주" in text)
-    check("[부록] PDF에 평가 기준표", "자체 평가 기준" in text)
+    # 평가 기준표는 사이드바 '평가 설정'으로 이동 — PDF 부록에서 제거됨
+    check("[부록] PDF에 평가 기준 부록 없음", "자체 평가 기준" not in text and "부록" not in text)
     check("[10] PDF에 근로자 의견 영역", "근로자 의견" in text and "참여 근로자" in text)
 except ImportError:
     print("SKIP - pypdf 미설치: PDF 텍스트 검증 생략")
@@ -199,8 +200,8 @@ res.review.final.hazards[0].needs_review = False
 res.review.final.hazards[0].needs_review_reason = ""
 
 html = pdf_service.build_html_report(res)
-check("[10] HTML 보고서: 개선 전·후/근로자 의견/기준표 포함",
-      "개선 후 위험성" in html and "근로자 의견" in html and "자체 평가 기준" in html)
+check("[10] HTML 보고서: 개선 전·후/근로자 의견 포함, 평가 기준 부록 없음",
+      "개선 후 위험성" in html and "근로자 의견" in html and "자체 평가 기준" not in html)
 
 res_c = FullResult(work_input=demo_data.get_sample_input("callcenter"), first=c_first,
                    review=c_review, is_demo=True, generated_at="2026-08-18 10:00", threshold=4)

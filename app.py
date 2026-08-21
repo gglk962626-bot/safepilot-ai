@@ -36,7 +36,7 @@ st.set_page_config(
 with st.sidebar:
     st.markdown("### 평가 설정")
     risk_threshold = st.number_input(
-        "최종 위험성 판단 기준",
+        "최종 위험성 판단 기준 (발생가능성 × 피해심각도)",
         min_value=1, max_value=25,
         value=DEFAULT_RISK_THRESHOLD, step=1,
         help="개선 후 위험도 점수가 이 값 이하이면 '설정 기준 이내'로 표시합니다.",
@@ -44,9 +44,28 @@ with st.sidebar:
     )
     st.caption(f"현재 기준: **{int(risk_threshold)}점 이하**")
     st.caption(
-        "※ 본 기준은 SafePilot의 기본 설정값이며, 실제 적용 시 사업장의 "
-        "위험성평가 기준 및 현장 여건에 따라 조정할 수 있습니다."
+        "※ SafePilot 평가 기준을 적용한 기본 설정값입니다. 실제 적용 시 "
+        "사업장의 위험성평가 기준 및 현장 여건에 따라 조정할 수 있습니다."
     )
+    with st.expander("SafePilot 평가 기준 보기"):
+        st.markdown(
+            "**발생가능성**\n\n"
+            "- 5 — 상시 또는 매우 빈번한 노출·발생\n"
+            "- 4 — 빈번한 노출·발생\n"
+            "- 3 — 간헐적인 노출·발생\n"
+            "- 2 — 드문 노출·발생\n"
+            "- 1 — 거의 발생하지 않음\n\n"
+            "**피해심각도**\n\n"
+            "- 5 — 사망·영구장애 수준의 중대 피해\n"
+            "- 4 — 휴업이 필요한 중상 수준\n"
+            "- 3 — 치료 또는 일정 기간의 요양이 필요한 수준\n"
+            "- 2 — 경미한 부상·건강장해\n"
+            "- 1 — 경미한 불편 수준"
+        )
+        st.caption(
+            "※ 위 기준은 SafePilot이 사용하는 평가 기준이며, "
+            "법정 단일 평가척도가 아닙니다."
+        )
 
 st.markdown(
     """
@@ -833,7 +852,7 @@ if result:
                 f"**개선 후 판단**\n"
                 f"- 가능성 {r_l}점 — {esc(rbl)}\n"
                 f"- 심각도 {r_s}점 — {esc(rbs)}")
-        st.caption("※ 위 점수는 SafePilot 자체 평가 기준(부록 수록)에 따른 것으로, 법정 단일 평가척도가 아닙니다.")
+        st.caption("※ 위 점수는 SafePilot 평가 기준(사이드바 '평가 설정' 참조)에 따른 것으로, 법정 단일 평가척도가 아닙니다.")
 
     # 개인보호구
     st.markdown('<div class="sp-sec">개인보호구 (PPE)</div>', unsafe_allow_html=True)
@@ -888,9 +907,7 @@ if result:
 
     # 참고한 안전자료 (로컬 검색으로 선정되어 1차 AI에 전달된 KOSHA 공개 자료)
     _ref_ids = getattr(result, "reference_ids", []) or []
-    _ref_title = ("실제 AI 생성 시 전달되는 참고 안전자료 (데모 표시)"
-                  if result.is_demo else "참고한 안전자료")
-    st.markdown(f'<div class="sp-sec">{_ref_title}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sp-sec">참고한 안전자료</div>', unsafe_allow_html=True)
     _ref_entries = [safety_references.get_reference(rid) for rid in _ref_ids]
     _ref_entries = [r for r in _ref_entries if r]
     if _ref_entries:
