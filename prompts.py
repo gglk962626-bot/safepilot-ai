@@ -115,8 +115,14 @@ FIRST_PASS_SYSTEM = f"""당신은 산업안전보건 분야 20년 경력의 위�
 }}"""
 
 
-def build_first_pass_user(work) -> str:
-    """1차 AI에 전달할 사용자 메시지를 구성한다."""
+def build_first_pass_user(work, reference_block: str = "") -> str:
+    """1차 AI에 전달할 사용자 메시지를 구성한다.
+
+    reference_block: 로컬 규칙으로 선정된 참고 안전자료 요약 블록 (없으면 빈 문자열
+    — 이 경우 기존과 완전히 동일한 프롬프트가 생성된다). 2차 교차검토에는
+    전달하지 않는다.
+    """
+    ref_section = f"\n{reference_block}\n" if reference_block.strip() else ""
     return f"""다음 작업에 대한 위험성평가를 작성하라.
 
 [작업 정보]
@@ -126,7 +132,7 @@ def build_first_pass_user(work) -> str:
 - 사용 장비: {work.equipment or "기재 없음"}
 - 작업 인원: {work.workers or "기재 없음"}
 - 특이사항: {work.notes or "없음"}
-
+{ref_section}
 JSON만 출력하라."""
 
 

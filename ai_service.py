@@ -346,13 +346,17 @@ def postprocess_result(work: WorkInput, result: AssessmentResult,
 # 공개 함수
 # ---------------------------------------------------------------------------
 
-def run_first_pass(work: WorkInput) -> AssessmentResult:
-    """1차 AI: 작업 정보를 분석하여 위험성평가 초안을 생성한다."""
+def run_first_pass(work: WorkInput, reference_block: str = "") -> AssessmentResult:
+    """1차 AI: 작업 정보를 분석하여 위험성평가 초안을 생성한다.
+
+    reference_block: 로컬 규칙으로 선정된 참고 안전자료 요약 (선택). 프롬프트에
+    덧붙일 뿐 API 호출 횟수는 동일하며, 없으면 기존과 완전히 같은 동작이다.
+    """
     client = _get_client()
     result = _call_and_parse(
         client,
         prompts.FIRST_PASS_SYSTEM,
-        prompts.build_first_pass_user(work),
+        prompts.build_first_pass_user(work, reference_block),
         AssessmentResult,
     )
     return postprocess_result(work, result, client=client)

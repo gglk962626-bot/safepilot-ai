@@ -35,11 +35,14 @@ def _load(filename: str) -> dict:
 _SCENARIOS: dict[str, dict] = {
     "welding": _load("demo_welding.json"),
     "callcenter": _load("demo_callcenter.json"),
+    # 실제 API 모드로 생성한 결과를 그대로 저장한 백업 데모 (reference_ids 포함)
+    "food": _load("demo_food.json"),
 }
 
 SCENARIO_LABELS = {
     "welding": "조선소 밀폐공간 용접",
     "callcenter": "콜센터 상담 업무",
+    "food": "식품 제조공장 설비 정비·세척",
 }
 DEFAULT_SCENARIO = "welding"
 
@@ -60,6 +63,15 @@ def get_demo_review(key: str = DEFAULT_SCENARIO) -> ReviewResult:
     return ReviewResult.model_validate(
         {"findings": d["findings"], "changes": d["changes"], "final": d["final"]}
     )
+
+
+def get_demo_reference_ids(key: str = DEFAULT_SCENARIO) -> list:
+    """데모 JSON에 저장된 참고 안전자료 id 목록을 반환한다.
+
+    생성 당시 실제 1차 AI에 전달된 reference_id를 그대로 담은 것이며,
+    키가 없는 기존 JSON에서는 빈 목록을 반환한다 (하위 호환).
+    """
+    return list(_SCENARIOS.get(key, {}).get("reference_ids", []) or [])
 
 
 # --- 하위 호환 (기존 코드·테스트가 참조하는 이름) ---

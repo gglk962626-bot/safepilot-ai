@@ -359,6 +359,8 @@ class FullResult(BaseModel):
     generated_at: str = ""           # 생성 일시 문자열
     edited: bool = False             # 책임자가 결과를 직접 수정했는지 여부
     threshold: int = DEFAULT_RISK_THRESHOLD  # 최종 위험성 판단 기준 (사용자 설정)
+    # 1차 AI에 실제 전달된 참고 안전자료 id (없으면 빈 목록 — 위험도 계산과 무관)
+    reference_ids: List[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

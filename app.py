@@ -11,6 +11,7 @@ import streamlit as st
 import ai_service
 import demo_data
 import input_check
+import safety_references
 import pdf_service
 from models import (
     AssessmentResult, CATEGORY_COUNT, DEFAULT_RISK_THRESHOLD, FullResult,
@@ -278,6 +279,8 @@ table.sp-table small {color: var(--sp-muted); font-size: .8em;}
 .sp-check.ok {background: #f4f9f6; border-color: #cde5d8; color: #2f6b4f;}
 .sp-check.warn {background: #fdfaf3; border-color: #ecdfc0; color: #7a6234;}
 .sp-check small {color: #94a3b8;}
+.ref-item {margin-top: 10px; font-size: .875rem; line-height: 1.55;}
+.ref-item a {color: #1d4ed8; text-decoration: none; font-size: .82rem;}
 
 /* ---------- 개선 전/후·검수·대책 표시 ---------- */
 .ctl-tag {
@@ -494,18 +497,32 @@ if generate:
                 with st.spinner("데모 결과를 불러오는 중..."):
                     first = demo_data.get_demo_first(scenario)
                     review = demo_data.get_demo_review(scenario)
+                # 데모 모드에서도 Reference 검색은 로컬로 실제 수행한다.
+                # 데모 JSON에 생성 당시 실제 전달된 reference_ids가 저장되어
+                # 있으면 그대로 사용하고, 없으면 현재 입력으로 로컬 검색한다.
+                _demo_ref_ids = demo_data.get_demo_reference_ids(scenario)
+                if not _demo_ref_ids:
+                    _demo_ref_ids = [s["reference"]["reference_id"]
+                                     for s in safety_references.select_references(demo_work)]
                 st.session_state.result = FullResult(
                     work_input=demo_work, first=first, review=review,
                     is_demo=True,
                     generated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    reference_ids=_demo_ref_ids,
                 )
                 st.session_state.result_ver += 1  # 새 결과 → 편집 위젯 상태 초기화
                 if missing:
                     st.info("데모 모드: 입력값이 비어 있어 샘플 작업 정보로 결과를 표시합니다.", icon="ℹ️")
             else:
                 with st.status("AI가 위험성평가를 작성하고 있습니다...", expanded=True) as status:
+                    # 로컬 Reference 검색 (API 호출 없음, 실패해도 생성은 계속)
+                    _selected_refs = safety_references.select_references(work)
+                    _ref_block = safety_references.build_prompt_block(_selected_refs)
+                    if _selected_refs:
+                        st.write(f"관련 KOSHA 안전자료 {len(_selected_refs)}건을 "
+                                 "로컬 검색으로 선정하여 1차 AI에 참고정보로 전달합니다.")
                     st.write("1단계: 작업 분석 및 위험성평가 초안 생성 중... (수 분이 걸릴 수 있습니다)")
-                    first = ai_service.run_first_pass(work)
+                    first = ai_service.run_first_pass(work, reference_block=_ref_block)
                     st.write(f"1단계 완료: 위험요인 {len(first.hazards)}건 도출")
                     st.write("2단계: AI 교차검토 및 누락 보완 중...")
                     review = ai_service.run_review_pass(work, first)
@@ -515,6 +532,7 @@ if generate:
                     work_input=work, first=first, review=review,
                     is_demo=False,
                     generated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    reference_ids=[s["reference"]["reference_id"] for s in _selected_refs],
                 )
                 st.session_state.result_ver += 1  # 새 결과 → 편집 위젯 상태 초기화
         except ai_service.AIServiceError as e:
@@ -867,6 +885,39 @@ if result:
             )
     else:
         st.markdown("검토 결과 변경사항이 없습니다.")
+
+    # 참고한 안전자료 (로컬 검색으로 선정되어 1차 AI에 전달된 KOSHA 공개 자료)
+    _ref_ids = getattr(result, "reference_ids", []) or []
+    _ref_title = ("실제 AI 생성 시 전달되는 참고 안전자료 (데모 표시)"
+                  if result.is_demo else "참고한 안전자료")
+    st.markdown(f'<div class="sp-sec">{_ref_title}</div>', unsafe_allow_html=True)
+    _ref_entries = [safety_references.get_reference(rid) for rid in _ref_ids]
+    _ref_entries = [r for r in _ref_entries if r]
+    if _ref_entries:
+        _rows = []
+        for _i, _r in enumerate(_ref_entries, 1):
+            _num = f" {esc(_r['document_number'])}" if _r.get("document_number") else ""
+            _rows.append(
+                f'<div class="ref-item"><b>{"①②③"[_i-1] if _i <= 3 else _i} '
+                f'{esc(_r["title"])}{_num}</b> · {esc(_r["source"])} '
+                f'({esc(_r["document_type"])}) &nbsp;'
+                f'<a href="{esc(_r["official_url"])}" target="_blank">[자료 보기]</a><br>'
+                f'<small style="color:#64748b">{esc(_r.get("usage_note", ""))}</small></div>')
+        st.markdown(
+            f'<div class="sp-table-wrap" style="padding:14px 18px">'
+            f'<small style="color:#64748b">현재 작업정보와 관련도가 높아 로컬 검색으로 '
+            f'선정된 한국산업안전보건공단 공개 자료 {len(_ref_entries)}건입니다. '
+            f'참고용 안전정보이며 위험도 판정이나 법적 판단의 근거가 아닙니다.</small>'
+            + "".join(_rows) + "</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            '<div class="sp-table-wrap" style="padding:14px 18px">'
+            '<small style="color:#64748b">현재 작업정보와 직접적으로 연결되는 '
+            '등록 안전자료가 없습니다.</small></div>',
+            unsafe_allow_html=True,
+        )
 
     # 근로자 참여 (현장 기재용 — 저장 기능 없음)
     st.markdown('<div class="sp-sec">근로자 의견</div>', unsafe_allow_html=True)
