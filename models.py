@@ -442,6 +442,8 @@ class FullResult(BaseModel):
     threshold: int = DEFAULT_RISK_THRESHOLD  # 최종 위험성 판단 기준 (사용자 설정)
     # 1차 AI에 실제 전달된 참고 안전자료 id (없으면 빈 목록 — 위험도 계산과 무관)
     reference_ids: List[str] = Field(default_factory=list)
+    # 작업정보에서 식별되어 MSDS 요약이 1차 AI에 전달된 물질명 (위험도 계산과 무관)
+    detected_chemicals: List[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

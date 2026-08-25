@@ -11,6 +11,7 @@ import streamlit as st
 import ai_service
 import demo_data
 import input_check
+import msds_data
 import safety_references
 import pdf_service
 from models import (
@@ -528,6 +529,8 @@ if generate:
                     is_demo=True,
                     generated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
                     reference_ids=_demo_ref_ids,
+                    detected_chemicals=[c["name"] for c in
+                                        msds_data.identify_chemicals(demo_work)],
                 )
                 st.session_state.result_ver += 1  # 새 결과 → 편집 위젯 상태 초기화
                 if missing:
@@ -540,6 +543,15 @@ if generate:
                     if _selected_refs:
                         st.write(f"관련 KOSHA 안전자료 {len(_selected_refs)}건을 "
                                  "로컬 검색으로 선정하여 1차 AI에 참고정보로 전달합니다.")
+                    # 화학물질 식별 (로컬 동의어 매칭, API 호출 없음) → MSDS 요약 전달
+                    _chems = msds_data.identify_chemicals(work)
+                    _msds_block = msds_data.build_msds_block(_chems)
+                    if _chems:
+                        st.write(f"작업정보에서 확인된 화학물질 {len(_chems)}종"
+                                 f"({', '.join(c['name'] for c in _chems)})의 "
+                                 "KOSHA MSDS 요약을 1차 AI에 참고정보로 전달합니다.")
+                    if _msds_block:
+                        _ref_block = (_ref_block + "\n\n" + _msds_block) if _ref_block else _msds_block
                     st.write("1단계: 작업 분석 및 위험성평가 초안 생성 중... (수 분이 걸릴 수 있습니다)")
                     first = ai_service.run_first_pass(work, reference_block=_ref_block)
                     st.write(f"1단계 완료: 위험요인 {len(first.hazards)}건 도출")
@@ -552,6 +564,7 @@ if generate:
                     is_demo=False,
                     generated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
                     reference_ids=[s["reference"]["reference_id"] for s in _selected_refs],
+                    detected_chemicals=[c["name"] for c in _chems],
                 )
                 st.session_state.result_ver += 1  # 새 결과 → 편집 위젯 상태 초기화
         except ai_service.AIServiceError as e:
@@ -911,10 +924,12 @@ if result:
     _ref_entries = [safety_references.get_reference(rid) for rid in _ref_ids]
     _ref_entries = [r for r in _ref_entries if r]
     # MSDS 확인 경로 보조 안내 — Top-3 선정·순위와 무관한 표시 전용 줄.
-    # 화학물질 취급 정황이 감지되고, MSDS 자료가 이미 목록에 없을 때만 붙는다.
+    # 화학물질 취급 정황이 감지되고, MSDS 자료가 이미 목록에 없으며,
+    # 개별 물질이 식별되지 않았을 때만 붙는다 (식별 시엔 아래 MSDS 정보 카드가 표시).
+    _detected = getattr(result, "detected_chemicals", []) or []
     _msds_line = ""
     _chem_hits = safety_references.detect_chemical_context(result.work_input)
-    if _chem_hits and safety_references.MSDS_REFERENCE_ID not in _ref_ids:
+    if _chem_hits and not _detected and safety_references.MSDS_REFERENCE_ID not in _ref_ids:
         _msds_ref = safety_references.get_reference(safety_references.MSDS_REFERENCE_ID)
         if _msds_ref:
             _msds_line = (
@@ -948,6 +963,38 @@ if result:
             '등록 안전자료가 없습니다.</small>' + _msds_line + '</div>',
             unsafe_allow_html=True,
         )
+
+    # 화학물질 MSDS 정보 — 작업정보에서 식별된 지원 물질의 KOSHA MSDS 요약.
+    # 1차 AI에 참고자료로 전달된 내용의 출처 표시이며, 위험도 계산과는 무관하다.
+    if _detected:
+        _chem_rows = []
+        for _name in _detected:
+            _c = msds_data.get_chemical(_name)
+            if not _c:
+                continue
+            _chem_rows.append(
+                f'<div class="ref-item"><b>{esc(_c["name"])}</b> '
+                f'(CAS {esc(_c["cas"])} · KOSHA MSDS 개정 {esc(_c["revision"])})<br>'
+                f'<small style="color:#475569">주요 유해·위험성: '
+                f'{esc(", ".join(_c["classification"][:4]))} — '
+                f'{esc("; ".join(h for h in _c["hazard_statements"][:3]))}</small><br>'
+                f'<small style="color:#475569">주요 예방조치: '
+                f'{esc(" / ".join(_c["precautions"][:2]))}</small></div>')
+        if _chem_rows:
+            st.markdown('<div class="sp-sec">화학물질 MSDS 정보</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="sp-table-wrap" style="padding:14px 18px">'
+                f'<small style="color:#64748b">작업정보에서 확인된 물질 '
+                f'{len(_chem_rows)}종의 KOSHA 공식 MSDS 요약입니다. 위험요인·안전대책 '
+                f'작성 시 참고자료로 활용되며, 위험도 점수를 직접 결정하지 않습니다.</small>'
+                + "".join(_chem_rows)
+                + f'<div class="ref-item" style="border-top:1px dashed #d8e0ea;'
+                  f'padding-top:10px;margin-top:12px"><small style="color:#64748b">'
+                  f'출처: 한국산업안전보건공단 화학물질정보 (KOSHA MSDS)</small> &nbsp;'
+                  f'<a href="{esc(msds_data.MSDS_SEARCH_URL)}" target="_blank">[MSDS 검색]</a>'
+                  f'</div></div>',
+                unsafe_allow_html=True,
+            )
 
     # 근로자 참여 (현장 기재용 — 저장 기능 없음)
     st.markdown('<div class="sp-sec">근로자 의견</div>', unsafe_allow_html=True)

@@ -17,7 +17,18 @@ from __future__ import annotations
 
 from typing import Dict, List
 
+import msds_data
+import safety_references
 from models import WorkInput
+
+# 화학물질 정황 감지 + 지원 물질 미식별 시 표시하는 고정 안내 문구
+# (매번 AI가 생성하지 않는다 — 예시 물질은 검증된 지원 범위 내에서 고정)
+CHEMICAL_INPUT_GUIDE = (
+    "화학물질을 사용하는 작업으로 판단됩니다. 실제 사용하는 화학물질을 "
+    "'특이사항'에 입력해 주세요. (예: 도료, 신너·희석제, 세척제, 아세톤, IPA 등) "
+    "입력된 정보를 바탕으로 관련 MSDS를 확인하며, 성분을 알 수 없는 "
+    "상품명·혼합물은 특정 물질로 확정하지 않습니다."
+)
 
 # 키워드 뒤 일정 범위에 이 표현이 있으면 해당 매칭은 부정 표현으로 간주한다.
 # (예: "용접 작업을 하지 않음") — 작업 특성 '감지'에만 적용한다.
@@ -127,6 +138,19 @@ INPUT_RULES: List[dict] = [
              "keywords": ["방수", "절연", "미끄럼", "배수", "장화", "누전차단"]},
             {"item": "끼임 위험 부위 및 작업방법",
              "keywords": ["끼임 방지", "롤러 간격", "협착 방지", "말림 방지"]},
+        ],
+    },
+    {
+        "key": "painting",
+        "label": "도장·스프레이 작업",
+        "keywords": ["도장", "스프레이", "분무", "페인트", "도료"],
+        "recommend": [
+            {"item": "도장 방식", "keywords": ["스프레이", "분무", "붓", "롤러", "에어리스", "정전"]},
+            {"item": "환기 방법", "keywords": ["환기", "배기", "송풍", "급기"]},
+            {"item": "사용 화학물질(물질명)",
+             "keywords": ["아세톤", "톨루엔", "크실렌", "자일렌", "이소프로필", "이소프로판올",
+                          "IPA", "MEK", "메틸에틸케톤", "메틸 에틸 케톤", "디클로로메탄",
+                          "염화메틸렌", "MSDS", "물질명"]},
         ],
     },
     {
@@ -280,6 +304,14 @@ def review_input(work: WorkInput) -> Dict:
                 "unconfirmed_count": 0, "confirmed_count": 0}
     traits = get_recommended_input_info(work)
     general = check_input_completeness(work)
+    # 화학물질 사용 정황이 있는데 지원 물질이 식별되지 않으면 고정 안내를 붙인다.
+    # (MSDS라는 단어를 직접 입력하지 않아도 도장·세척 등 작업 맥락만으로 안내)
+    try:
+        if (safety_references.detect_chemical_context(work)
+                and not msds_data.identify_chemicals(work)):
+            general.append(CHEMICAL_INPUT_GUIDE)
+    except Exception:
+        pass  # 안내 실패가 입력 확인 자체를 막지 않는다
     return {
         "has_input": True,
         "traits": traits,
