@@ -272,6 +272,13 @@ class AssessmentResult(BaseModel):
             return [v]
         return list(v)
 
+    @field_validator("tbm", "checklist", mode="after")
+    @classmethod
+    def _strip_item_numbers(cls, v):
+        # 화면·PDF가 번호를 붙이므로, AI가 '1. ' 접두를 포함해 생성한 경우
+        # 중복 표기('1. 1. ...')가 되지 않도록 선행 번호를 제거한다.
+        return [re.sub(r"^(\s*\d+\s*[.)]\s*)+", "", item).strip() for item in v]
+
     @field_validator("no_hazard_steps", mode="before")
     @classmethod
     def _ensure_nhs(cls, v):
@@ -352,6 +359,13 @@ _SYSTEM_FIELD_TOKENS = [
 # 필드 '정리 작업' 서술을 나타내는 표현 (시스템 필드 토큰과 함께 나오면 제거)
 _FIELD_CLEANUP_HINTS = ["필드", "키", "스키마", "자동 계산", "자체 계산", "시스템", "속성"]
 
+# 표기·명칭 등 '형식 정리' 서술 판정 (안전 내용의 실질 변화가 없으면 표시 제외)
+_FORMAT_TARGETS = ["명칭", "번호", "표기", "오타", "오탈자"]
+_FORMAT_ACTIONS = ["일치", "통일", "명확히", "정리", "형식"]
+# 아래 실질 변화 신호가 있으면 형식 정리로 보지 않고 유지한다
+_SUBSTANTIVE_HINTS = ["위험요인", "대책", "누락", "보완", "추가함", "신설",
+                      "가능성", "심각도", "점수", "근거"]
+
 # 내부 필드명 → 사용자용 한국어 표현 (제거가 아닌 치환 대상)
 _FIELD_LABELS = {
     "no_hazard_steps": "위험요인 없는 단계",
@@ -406,6 +420,11 @@ def sanitize_changes(changes: List["ChangeItem"]) -> List["ChangeItem"]:
             has_cleanup = any(h in blob for h in _FIELD_CLEANUP_HINTS)
             if has_system and has_cleanup:
                 continue  # 시스템 계산 필드 정리 보고 → 사용자 표시에서 제외
+            # 단계 명칭·번호 표기 등 형식 정리 보고 (안전 내용 변화 없음) → 제외
+            if (any(t in blob for t in _FORMAT_TARGETS)
+                    and any(a in blob for a in _FORMAT_ACTIONS)
+                    and not any(s in blob for s in _SUBSTANTIVE_HINTS)):
+                continue
             new_target = _replace_field_names(c.target)
             new_desc = _replace_field_names(c.description)
             if new_target != c.target or new_desc != c.description:

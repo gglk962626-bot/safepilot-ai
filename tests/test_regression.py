@@ -337,6 +337,25 @@ check("[정제] 데모 JSON 파일 자체는 원본 유지",
       any("improvement_required" in c.get("description", "")
           for c in _json.load(open("assets/demo_food.json", encoding="utf-8"))["changes"]))
 
+# 형식 정리(명칭·번호 표기) 항목 제거 + 실질 변화 항목 보존
+_ch2 = sanitize_changes([
+    ChangeItem(action="수정", target="작업 단계 명칭",
+               description="혼재 단계 명칭 '4~5. 배관 연결부 아크용접 및 사상 작업'을 실제 작업 단계 "
+                           "리스트와 일치하도록 수정하여 명확히 함"),
+    ChangeItem(action="수정", target="위험요인",
+               description="단계 명칭 변경에 맞춰 감전 위험요인의 대책을 보완함"),
+])
+check("[정제] 단계 명칭 표기 정리 항목 제거", len(_ch2) == 1)
+check("[정제] 명칭 언급이라도 실질 변화(대책 보완)는 유지", "대책" in _ch2[0].description)
+
+# TBM·체크리스트 번호 접두 정규화 (AI가 '1. '을 붙여도 중복 표기 방지)
+from models import AssessmentResult as _AR
+_ar = _AR(tbm=["1. 산소 농도를 측정한다", "2) 화기감시자를 배치한다", "번호 없는 항목"],
+          checklist=["1. 1. 이중 번호 항목"])
+check("[정제] TBM 선행 번호 제거", _ar.tbm[0] == "산소 농도를 측정한다"
+      and _ar.tbm[1] == "화기감시자를 배치한다" and _ar.tbm[2] == "번호 없는 항목")
+check("[정제] 이중 번호('1. 1.')도 제거", _ar.checklist[0] == "이중 번호 항목")
+
 print()
 print(f"결과: {len(passed)} PASS / {len(failed)} FAIL")
 if key_present:

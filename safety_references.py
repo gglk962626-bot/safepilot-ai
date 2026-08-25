@@ -429,6 +429,10 @@ def select_references(work, limit: int = MAX_REFERENCES) -> List[dict]:
             rid = ref.get("reference_id")
             if not rid or rid in seen:
                 continue
+            # MSDS 검색 시스템은 Top-3 문서와 경쟁시키지 않는다 —
+            # 화학물질 정황 감지 시 별도 안내 줄/MSDS 정보 카드로만 표기된다.
+            if rid == MSDS_REFERENCE_ID:
+                continue
             seen.add(rid)
             score, matched = score_reference(text, ref)
             if score >= _MIN_SCORE:

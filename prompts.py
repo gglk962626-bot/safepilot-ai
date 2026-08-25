@@ -163,6 +163,9 @@ REVIEW_SYSTEM = f"""당신은 산업안전보건 감독관 출신의 위험성�
 5. 수정하거나 추가한 모든 항목을 changes에 기록한다. (무엇을, 왜 바꿨는지)
    - 단, risk_score·risk_level·improvement_required·needs_review 등 시스템이 자동
      계산·관리하는 필드의 추가·제거·정리는 변경사항이 아니므로 changes에 기록하지 않는다.
+   - 단계 명칭·번호·표기 통일 등 안전 내용의 실질 변화가 없는 형식 정리도
+     changes에 기록하지 않는다. tbm과 checklist 항목에는 번호를 붙이지 않는다
+     (번호는 시스템이 표시 시 자동으로 붙인다).
    - changes의 target과 description에는 JSON 필드명 등 내부 용어가 아닌,
      현장 책임자가 이해할 수 있는 한국어 표현을 사용한다.
 6. final에는 보완이 반영된 완성본 전체를 다시 작성한다. (초안에서 적정한 부분은 그대로 유지)

@@ -169,10 +169,14 @@ clean_only = ids(sr.select_references(
       description="세척조에서 세척제로 금속 부품을 탈지·세척한다.")))
 check("[11] 세척 입력 → 세척 OPS 선정", "cleaning-3-measures-ops" in clean_only)
 
+# MSDS 검색 시스템은 Top-3 문서와 경쟁하지 않고 항상 별도 안내로만 표기된다
 msds_in = ids(sr.select_references(
     W(name="화학물질 취급 전 MSDS 확인", location="자재창고",
       description="신규 입고된 화학물질의 물질안전보건자료(MSDS)를 확인하고 경고표지를 부착한다.")))
-check("[11] MSDS·화학물질 입력 → 화학물질정보 시스템 선정 가능", "kosha-msds-info" in msds_in)
+check("[11] MSDS 직접 언급 입력에서도 Top-3에는 미포함 (별도 표기 전용)",
+      "kosha-msds-info" not in msds_in)
+check("[11] MSDS 자료 데이터 자체는 유지 (별도 안내에서 사용)",
+      sr.get_reference("kosha-msds-info") is not None)
 
 PLAIN_WORK = W(name="사무실 서류 정리", location="본관 3층",
                description="보관 문서를 분류하여 서가에 정리한다.")
