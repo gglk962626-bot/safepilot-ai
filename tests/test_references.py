@@ -42,7 +42,8 @@ CALL = W(name="콜센터 고객상담", location="본사 고객센터 상담실"
 # ---------------------------------------------------------------------------
 # [1] 데이터 무결성 — 실존 확인 자료만, 필수 필드 완비
 # ---------------------------------------------------------------------------
-check("[1] Reference 11~12건 수록", 11 <= len(sr.REFERENCES) <= 12)
+# 도장·세척 4건 추가로 15~16건 (식품4 + 조선4 + 도장·세척4 + 콜센터4)
+check("[1] Reference 15~16건 수록", 15 <= len(sr.REFERENCES) <= 16)
 required = ["reference_id", "title", "source", "document_type", "official_url",
             "applicable_keywords", "summary", "safety_points", "usage_note"]
 check("[1] 모든 자료에 필수 필드 존재",
@@ -139,6 +140,68 @@ check("[8] 0건 → 빈 블록 → 프롬프트 무변화", sr.build_prompt_bloc
 one = sel_food[:1]
 b1 = sr.build_prompt_block(one)
 check("[8] 1건만 선정돼도 블록 정상 생성", "1. 자료명:" in b1 and "2. 자료명:" not in b1)
+
+# ---------------------------------------------------------------------------
+# [11] 도장·세척 Reference (신규 4건)
+# ---------------------------------------------------------------------------
+PAINT_DEMO = W(
+    name="선박 블록 내부 도장 및 세척·정비 작업",
+    location="OO조선소 제3도크",
+    description="블록 내부에서 도장작업 후 도장설비 및 작업구역을 세척하고, 설비 정비를 수행한다.",
+    equipment="스프레이건, 환기설비, 세척장비, 전동공구",
+    workers="도장공 2명, 보조 1명",
+    notes="유기용제 및 세척제를 사용하며 블록 내부에서 작업한다.",
+)
+u11 = ids(sr.select_references(PAINT_DEMO))
+check("[11] 도장·세척 데모 입력 → 도장 화재·폭발 규정 선정", "painting-fire-explosion" in u11)
+check("[11] 선박 블록 내부 도장 → 선박 도장 지침 선정", "ship-painting-safety" in u11)
+check("[11] 세척제 사용 → 세척작업 OPS 선정", "cleaning-3-measures-ops" in u11)
+check("[11] 상위 3건 = 도장·선박도장·세척 (관련도순)", len(u11) == 3)
+
+paint_only = ids(sr.select_references(
+    W(name="건물 외벽 도장 작업", location="본관 외벽",
+      description="스프레이로 외벽 도장을 실시한다.", equipment="스프레이건, 도료")))
+check("[11] 일반 도장 입력 → 도장 규정 선정, 선박 지침 미선정",
+      "painting-fire-explosion" in paint_only and "ship-painting-safety" not in paint_only)
+
+clean_only = ids(sr.select_references(
+    W(name="부품 세척 작업", location="세척실",
+      description="세척조에서 세척제로 금속 부품을 탈지·세척한다.")))
+check("[11] 세척 입력 → 세척 OPS 선정", "cleaning-3-measures-ops" in clean_only)
+
+msds_in = ids(sr.select_references(
+    W(name="화학물질 취급 전 MSDS 확인", location="자재창고",
+      description="신규 입고된 화학물질의 물질안전보건자료(MSDS)를 확인하고 경고표지를 부착한다.")))
+check("[11] MSDS·화학물질 입력 → 화학물질정보 시스템 선정 가능", "kosha-msds-info" in msds_in)
+
+PLAIN_WORK = W(name="사무실 서류 정리", location="본관 3층",
+               description="보관 문서를 분류하여 서가에 정리한다.")
+check("[11] 무관 작업(서류 정리)에 신규 자료 미선정",
+      not any(i in ids(sr.select_references(PLAIN_WORK)) for i in
+              ["painting-fire-explosion", "ship-painting-safety",
+               "cleaning-3-measures-ops", "kosha-msds-info"]))
+
+# 기존 시나리오 보호: 식품 상위 3건에 신규 자료가 억지 진입하지 않음
+food_after = ids(sr.select_references(FOOD))
+check("[11] 기존 식품 입력 상위 3건 유지 (컨베이어·LOTO 계열)",
+      "conveyor-safety" in food_after and "loto-energy-isolation" in food_after
+      and "painting-fire-explosion" not in food_after)
+call_after = ids(sr.select_references(CALL))
+check("[11] 기존 콜센터 입력에 신규 자료 미선정",
+      not any(i in call_after for i in
+              ["painting-fire-explosion", "ship-painting-safety",
+               "cleaning-3-measures-ops", "kosha-msds-info"]))
+# G-117 보건관리 제외 원칙: usage_note가 화재·폭발/작업관리 범위로 한정되고 중독 표현 없음
+g117 = sr.get_reference("ship-painting-safety")
+check("[11] G-117 usage_note에 중독·건강장해 표현 없음",
+      "중독" not in g117["usage_note"] and "건강장해" not in g117["usage_note"]
+      and "화재" in g117["usage_note"])
+# MSDS 표현 과장 금지
+msds_ref = sr.get_reference("kosha-msds-info")
+_msds_blob = msds_ref["summary"] + msds_ref["usage_note"] + " ".join(msds_ref["safety_points"])
+check("[11] MSDS 자료에 '실시간 분석' 등 과장 표현 없음",
+      "실시간" not in _msds_blob and "자동 산정" not in _msds_blob
+      and msds_ref["document_type"] == "화학물질정보 시스템")
 
 # ---------------------------------------------------------------------------
 # [9] Reference 매칭 경로에 AI 호출 없음
