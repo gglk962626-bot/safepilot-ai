@@ -334,6 +334,87 @@ class ChangeItem(BaseModel):
     target: str = Field(default="", description="변경 대상 영역")
     description: str = Field(default="", description="변경 내용 설명")
 
+
+# ---------------------------------------------------------------------------
+# 변경사항(changes) 표시 정제
+# - 2차 AI가 시스템 자동 계산 필드의 정리 작업을 '변경사항'으로 보고하는 경우가
+#   있어, 사용자에게 무의미한 항목은 제거하고 내부 필드명은 한국어로 치환한다.
+# - 위험성평가 내용 자체(hazards·근거·대책 등)는 건드리지 않는다.
+# ---------------------------------------------------------------------------
+
+# 코드가 자체 계산·관리하는 필드 (AI가 정리했다고 보고해도 사용자에게 무의미)
+_SYSTEM_FIELD_TOKENS = [
+    "risk_score", "risk_level", "residual_score", "residual_level",
+    "improvement_required", "needs_review_reason", "needs_review",
+    "needs_review_count", "improvement_required_count",
+    "max_risk_score", "max_risk_level", "reference_ids",
+]
+# 필드 '정리 작업' 서술을 나타내는 표현 (시스템 필드 토큰과 함께 나오면 제거)
+_FIELD_CLEANUP_HINTS = ["필드", "키", "스키마", "자동 계산", "자체 계산", "시스템", "속성"]
+
+# 내부 필드명 → 사용자용 한국어 표현 (제거가 아닌 치환 대상)
+_FIELD_LABELS = {
+    "no_hazard_steps": "위험요인 없는 단계",
+    "work_steps": "작업 단계",
+    "hazards": "위험요인 목록",
+    "residual_basis_likelihood": "개선 후 가능성 판단 근거",
+    "residual_basis_severity": "개선 후 심각도 판단 근거",
+    "basis_likelihood": "가능성 판단 근거",
+    "basis_severity": "심각도 판단 근거",
+    "residual_likelihood": "개선 후 발생 가능성",
+    "residual_severity": "개선 후 피해 심각도",
+    "likelihood": "발생 가능성",
+    "severity": "피해 심각도",
+    "control_type": "대책 유형",
+    "measures": "감소대책",
+    "checklist": "체크리스트",
+    "damage": "예상 피해",
+    "hazard": "위험요인",
+    "cause": "원인",
+    "category": "위험 분류",
+    "ppe": "개인보호구",
+    "tbm": "TBM",
+    "step": "작업 단계",
+    # 시스템 필드가 '치환' 경로로 남는 경우의 안전망
+    "risk_score": "위험도 점수",
+    "risk_level": "위험도 등급",
+    "residual_score": "개선 후 위험도 점수",
+    "residual_level": "개선 후 위험도 등급",
+    "improvement_required": "개선 필요 여부",
+    "needs_review_reason": "검수 필요 사유",
+    "needs_review": "검수 필요 여부",
+}
+
+
+def _replace_field_names(text: str) -> str:
+    """텍스트 안의 내부 필드명을 한국어 표현으로 치환한다 (긴 이름 우선)."""
+    for key in sorted(_FIELD_LABELS, key=len, reverse=True):
+        if key in text:
+            text = text.replace(key, _FIELD_LABELS[key])
+    return text
+
+
+def sanitize_changes(changes: List["ChangeItem"]) -> List["ChangeItem"]:
+    """사용자에게 무의미한 시스템 필드 정리 항목을 제거하고, 남는 항목의
+    내부 필드명은 한국어로 치환한다. 실패 시 원본을 그대로 반환한다 (fail-open).
+    """
+    try:
+        out: List[ChangeItem] = []
+        for c in changes or []:
+            blob = f"{c.target} {c.description}"
+            has_system = any(t in blob for t in _SYSTEM_FIELD_TOKENS)
+            has_cleanup = any(h in blob for h in _FIELD_CLEANUP_HINTS)
+            if has_system and has_cleanup:
+                continue  # 시스템 계산 필드 정리 보고 → 사용자 표시에서 제외
+            new_target = _replace_field_names(c.target)
+            new_desc = _replace_field_names(c.description)
+            if new_target != c.target or new_desc != c.description:
+                c = ChangeItem(action=c.action, target=new_target, description=new_desc)
+            out.append(c)
+        return out
+    except Exception:
+        return changes if isinstance(changes, list) else []
+
     @field_validator("action", mode="before")
     @classmethod
     def _normalize_action(cls, v):

@@ -303,6 +303,40 @@ check("회귀: 빈 final → 1차 결과로 대체", len(rvw2.final.hazards) == 
 ai_service._call_model = orig_call
 ai_service._get_client = orig_client
 
+# ---------------------------------------------------------------------------
+# [정제] 변경사항(changes) 표시 정제 — 시스템 필드 정리 제거·내부 필드명 치환
+# ---------------------------------------------------------------------------
+from models import ChangeItem, sanitize_changes
+
+_ch = sanitize_changes([
+    ChangeItem(action="추가", target="평가 필드",
+               description="시스템 자동 계산 필드(risk_score, improvement_required, needs_review)를 제거함"),
+    ChangeItem(action="수정", target="no_hazard_steps",
+               description="무위험 단계를 위험단계로 전환하여 안전대책을 신설함"),
+    ChangeItem(action="수정", target="위험요인",
+               description="밀폐공간 질식 위험의 원인 서술을 구체화함"),
+])
+check("[정제] 시스템 필드 정리 보고 항목 제거", len(_ch) == 2
+      and all("risk_score" not in c.description for c in _ch))
+check("[정제] 내부 필드명 target 한국어 치환", _ch[0].target == "위험요인 없는 단계")
+check("[정제] 일반 변경 항목은 그대로 유지", _ch[1].target == "위험요인"
+      and "구체화" in _ch[1].description)
+check("[정제] 빈 목록·오류 입력 fail-open",
+      sanitize_changes([]) == [] and isinstance(sanitize_changes(None), list))
+
+# 데모 로드 경로에도 적용 (JSON 파일은 무수정, 메모리 정제만)
+_food_ch = demo_data.get_demo_review("food").changes
+check("[정제] 식품 데모의 시스템 필드 정리 항목 미표시",
+      not any("improvement_required" in c.description or "risk_score" in c.description
+              for c in _food_ch))
+_paint_ch = demo_data.get_demo_review("painting").changes
+check("[정제] 도장 데모 target 내부 필드명 치환",
+      not any("no_hazard_steps" in (c.target + c.description) for c in _paint_ch))
+import json as _json
+check("[정제] 데모 JSON 파일 자체는 원본 유지",
+      any("improvement_required" in c.get("description", "")
+          for c in _json.load(open("assets/demo_food.json", encoding="utf-8"))["changes"]))
+
 print()
 print(f"결과: {len(passed)} PASS / {len(failed)} FAIL")
 if key_present:

@@ -19,7 +19,7 @@ import prompts
 from models import (
     AssessmentResult, FIXED_TBM_ITEM, HazardPatch, NoHazardStep,
     REVIEW_CATEGORIES, ReviewFinding, ReviewResult, WorkInput,
-    normalize_steps, prune_no_hazard_steps, uncovered_steps,
+    normalize_steps, prune_no_hazard_steps, sanitize_changes, uncovered_steps,
 )
 
 load_dotenv()
@@ -376,5 +376,7 @@ def run_review_pass(work: WorkInput, first: AssessmentResult) -> ReviewResult:
     if not review.final.hazards:
         review.final = first
     _ensure_finding_coverage(review)  # 20개 범주 판정 누락 시 코드가 투명하게 보정
+    # 시스템 계산 필드 정리 보고 제거·내부 필드명 한국어 치환 (표시용 정제)
+    review.changes = sanitize_changes(review.changes)
     postprocess_result(work, review.final, review=review, client=client)
     return review

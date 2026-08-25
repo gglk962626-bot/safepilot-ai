@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import os
 
-from models import AssessmentResult, ReviewResult, WorkInput
+from models import AssessmentResult, ReviewResult, WorkInput, sanitize_changes
 
 _ASSET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 
@@ -60,11 +60,17 @@ def get_demo_first(key: str = DEFAULT_SCENARIO) -> AssessmentResult:
 
 
 def get_demo_review(key: str = DEFAULT_SCENARIO) -> ReviewResult:
-    """데모용 2차 검토 결과를 Pydantic 모델로 반환한다."""
+    """데모용 2차 검토 결과를 Pydantic 모델로 반환한다.
+
+    저장 당시 실제 API 산출물(JSON)은 그대로 두고, 표시 단계에서만
+    시스템 필드 정리 항목 제거·내부 필드명 한국어 치환을 적용한다.
+    """
     d = _SCENARIOS[key]
-    return ReviewResult.model_validate(
+    review = ReviewResult.model_validate(
         {"findings": d["findings"], "changes": d["changes"], "final": d["final"]}
     )
+    review.changes = sanitize_changes(review.changes)
+    return review
 
 
 def get_demo_reference_ids(key: str = DEFAULT_SCENARIO) -> list:
