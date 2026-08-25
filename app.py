@@ -910,6 +910,19 @@ if result:
     st.markdown('<div class="sp-sec">참고한 안전자료</div>', unsafe_allow_html=True)
     _ref_entries = [safety_references.get_reference(rid) for rid in _ref_ids]
     _ref_entries = [r for r in _ref_entries if r]
+    # MSDS 확인 경로 보조 안내 — Top-3 선정·순위와 무관한 표시 전용 줄.
+    # 화학물질 취급 정황이 감지되고, MSDS 자료가 이미 목록에 없을 때만 붙는다.
+    _msds_line = ""
+    _chem_hits = safety_references.detect_chemical_context(result.work_input)
+    if _chem_hits and safety_references.MSDS_REFERENCE_ID not in _ref_ids:
+        _msds_ref = safety_references.get_reference(safety_references.MSDS_REFERENCE_ID)
+        if _msds_ref:
+            _msds_line = (
+                f'<div class="ref-item" style="border-top:1px dashed #d8e0ea;'
+                f'padding-top:10px;margin-top:12px">💡 작업정보에서 화학물질 취급'
+                f'({esc(", ".join(_chem_hits[:4]))})이 확인되었습니다. '
+                f'{esc(_msds_ref["usage_note"])} &nbsp;'
+                f'<a href="{esc(_msds_ref["official_url"])}" target="_blank">[MSDS 검색]</a></div>')
     if _ref_entries:
         _rows = []
         for _i, _r in enumerate(_ref_entries, 1):
@@ -925,14 +938,14 @@ if result:
             f'<small style="color:#64748b">현재 작업정보와 관련도가 높아 로컬 검색으로 '
             f'선정된 한국산업안전보건공단 공개 자료 {len(_ref_entries)}건입니다. '
             f'참고용 안전정보이며 위험도 판정이나 법적 판단의 근거가 아닙니다.</small>'
-            + "".join(_rows) + "</div>",
+            + "".join(_rows) + _msds_line + "</div>",
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
             '<div class="sp-table-wrap" style="padding:14px 18px">'
             '<small style="color:#64748b">현재 작업정보와 직접적으로 연결되는 '
-            '등록 안전자료가 없습니다.</small></div>',
+            '등록 안전자료가 없습니다.</small>' + _msds_line + '</div>',
             unsafe_allow_html=True,
         )
 

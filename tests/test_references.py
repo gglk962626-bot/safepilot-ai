@@ -204,6 +204,35 @@ check("[11] MSDS 자료에 '실시간 분석' 등 과장 표현 없음",
       and msds_ref["document_type"] == "화학물질정보 시스템")
 
 # ---------------------------------------------------------------------------
+# [12] 화학물질 정황 감지 → MSDS 보조 안내 (Top-3 선정과 분리)
+# ---------------------------------------------------------------------------
+check("[12] 도장·세척 입력 → 정황 감지 (도장·유기용제·세척제)",
+      set(sr.detect_chemical_context(PAINT_DEMO)) >= {"도장", "유기용제", "세척제"})
+check("[12] 세척제·탈지 입력 → 정황 감지",
+      len(sr.detect_chemical_context(
+          W(name="부품 세척", location="세척실",
+            description="세척조에서 세척제로 탈지·세척한다."))) >= 1)
+check("[12] 콜센터 입력 → 정황 미감지", sr.detect_chemical_context(CALL) == [])
+check("[12] 물세척(고압 살수)만 → 정황 미감지",
+      sr.detect_chemical_context(
+          W(name="바닥 고압 세척", location="주차장",
+            description="고압 살수기로 바닥을 물세척한다.")) == [])
+check("[12] '사용제한' 문구 → '용제' 오탐 없음",
+      sr.detect_chemical_context(
+          W(name="안내문 부착", location="창고",
+            description="지게차 사용제한 구역 안내문을 부착한다.")) == [])
+check("[12] 무관 작업(서류 정리) → 정황 미감지",
+      sr.detect_chemical_context(PLAIN_WORK) == [])
+# Top-3 선정 결과는 정황 감지와 무관하게 기존 그대로 (순위 영향 0)
+check("[12] 도장 데모 Top-3 불변 (도장·세척·선박도장)",
+      ids(sr.select_references(PAINT_DEMO)) == u11)
+check("[12] 식품 데모 Top-3 불변", ids(sr.select_references(FOOD)) == food_after)
+check("[12] MSDS 상수가 실제 자료를 가리킴",
+      sr.get_reference(sr.MSDS_REFERENCE_ID) is not None)
+check("[12] 정황 감지도 fail-open (잘못된 입력 → 빈 목록)",
+      sr.detect_chemical_context(None) == [])
+
+# ---------------------------------------------------------------------------
 # [9] Reference 매칭 경로에 AI 호출 없음
 # ---------------------------------------------------------------------------
 src = open(os.path.join(os.path.dirname(__file__), "..", "safety_references.py"),
