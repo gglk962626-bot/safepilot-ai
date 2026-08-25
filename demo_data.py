@@ -37,12 +37,14 @@ _SCENARIOS: dict[str, dict] = {
     "callcenter": _load("demo_callcenter.json"),
     # 실제 API 모드로 생성한 결과를 그대로 저장한 백업 데모 (reference_ids 포함)
     "food": _load("demo_food.json"),
+    "painting": _load("demo_painting.json"),
 }
 
 SCENARIO_LABELS = {
     "welding": "조선소 밀폐공간 용접",
     "callcenter": "콜센터 상담 업무",
     "food": "식품 제조공장 설비 정비·세척",
+    "painting": "선박 블록 도장·세척 작업",
 }
 DEFAULT_SCENARIO = "welding"
 

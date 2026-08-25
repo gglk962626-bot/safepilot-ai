@@ -1,0 +1,598 @@
+{
+ "sample_input": {
+  "name": "선박 블록 내부 도장 및 세척·정비 작업",
+  "location": "OO조선소 제3도크",
+  "description": "블록 내부에서 도장작업 후 도장설비 및 작업구역을 세척하고, 설비 정비를 수행한다.",
+  "equipment": "스프레이건, 환기설비, 세척장비, 전동공구",
+  "workers": "도장공 2명, 보조 1명",
+  "notes": "유기용제 및 세척제를 사용하며 블록 내부에서 작업한다."
+ },
+ "reference_ids": [
+  "painting-fire-explosion",
+  "cleaning-3-measures-ops",
+  "ship-painting-safety"
+ ],
+ "first": {
+  "work_overview": "본 작업은 조선소 제3도크의 선박 블록 내부에서 도장, 설비 세척 및 정비를 수행하는 작업입니다. 밀폐된 블록 내에서 인화성 유기용제와 세척제를 사용함에 따라 질식, 화재·폭발, 급성 중독의 위험이 매우 높아 철저한 사전 환기와 가스 측정이 요구됩니다.",
+  "work_steps": [
+   "1. 작업 전 가스 농도 측정 및 밀폐공간 작업허가",
+   "2. 급·배기 환기설비 설치 및 가동",
+   "3. 블록 내부 도장 작업",
+   "4. 도장 설비 및 작업구역 세척 작업",
+   "5. 도장 및 세척 설비 정비 작업",
+   "6. 작업 공구 회수 및 정리정돈"
+  ],
+  "hazards": [
+   {
+    "step": "1. 작업 전 가스 농도 측정 및 밀폐공간 작업허가",
+    "category": "밀폐공간",
+    "hazard": "산소결핍 및 유해가스 체류로 인한 질식 위험",
+    "cause": "사전 가스 농도 측정 없이 밀폐된 블록 내부에 무단 진입함",
+    "damage": "산소결핍증으로 인한 질식 및 사망",
+    "likelihood": 3,
+    "severity": 5,
+    "measures": [
+     {
+      "control_type": "administrative",
+      "description": "밀폐공간 출입 전 산소(18% 이상 23.5% 미만) 및 유해가스 농도 연속 측정 및 밀폐공간 출입 허가서 발급"
+     },
+     {
+      "control_type": "administrative",
+      "description": "작업장 입구에 감시인을 상시 배치하여 출입 인원 파악 및 무단 진입 방지"
+     }
+    ],
+    "ppe": [
+     "송기마스크",
+     "산소/유해가스 측정기"
+    ],
+    "residual_likelihood": 1,
+    "residual_severity": 5,
+    "basis_likelihood": "환기가 불량한 선박 블록 내부의 특성상 밀폐공간 진입 전 미측정 시 질식 사고 발생 가능성이 높음",
+    "basis_severity": "밀폐공간 내 산소농도 저하 및 유해가스 흡입 시 뇌사에 이르거나 사망하는 치명적인 결과를 초래함",
+    "residual_basis_likelihood": "사전 출입허가제 준수 및 철저한 측정으로 미측정 상태의 진입 가능성을 근본적으로 제거함",
+    "residual_basis_severity": "질식 사고 발생 시의 피해 심각도 자체는 여전히 중대하므로 기존 점수를 유지함",
+    "improvement_required": false,
+    "needs_review": false,
+    "needs_review_reason": ""
+   },
+   {
+    "step": "2. 급·배기 환기설비 설치 및 가동",
+    "category": "감전",
+    "hazard": "습한 환경에서 임시 동력선 사용 시 누전에 의한 감전",
+    "cause": "방폭형 환기설비 등 임시 전원 케이블의 절연 피복 손상 및 접지 불량",
+    "damage": "감전으로 인한 심정지 또는 추락 등 2차 재해",
+    "likelihood": 2,
+    "severity": 4,
+    "measures": [
+     {
+      "control_type": "engineering",
+      "description": "누전차단기(정격감도전류 30mA 이하, 작동시간 0.03초 이내)가 부착된 분전반 전원만 사용"
+     },
+     {
+      "control_type": "engineering",
+      "description": "환기설비 외함 외측에 규격에 맞는 접지선 연결 확인"
+     },
+     {
+      "control_type": "administrative",
+      "description": "작업 전 케이블 피복의 열화 및 파손 여부를 정밀 점검하고 불량품은 즉시 폐기"
+     }
+    ],
+    "ppe": [
+     "절연장갑",
+     "절연화"
+    ],
+    "residual_likelihood": 1,
+    "residual_severity": 4,
+    "basis_likelihood": "조선소 도크 특성상 습기가 많아 절연 파손 부위를 통한 누전 발생 가능성이 상존함",
+    "basis_severity": "충전부 접촉 시 전격에 의해 심정지나 근육 수축으로 인한 2차 추락 등 중상을 초래할 수 있음",
+    "residual_basis_likelihood": "누전차단기 사용 및 사전 접지·절연 점검을 통해 감전 유발 가능성을 현저히 낮춤",
+    "residual_basis_severity": "전격의 물리적 영향 자체를 제어할 수 없으므로 감전 시의 심각도 점수는 유지함",
+    "improvement_required": false,
+    "needs_review": false,
+    "needs_review_reason": ""
+   },
+   {
+    "step": "3. 블록 내부 도장 작업",
+    "category": "화재 및 폭발",
+    "hazard": "인화성 증기 체류 및 정전기 스파크에 의한 화재·폭발",
+    "cause": "스프레이 도장 중 분무된 가연성 용제 증기가 폭발하한계(LEL) 이상 체류하고 스프레이건 정전기 등 점화원이 접촉함",
+    "damage": "화재·폭발로 인한 폭풍압 피해 및 전신 화상, 사망",
+    "likelihood": 3,
+    "severity": 5,
+    "measures": [
+     {
+      "control_type": "engineering",
+      "description": "연속적인 가스 검지기 설치를 통한 인화성 증기 농도 모니터링 및 LEL 10% 초과 시 도장기 전원 자동 차단 연동"
+     },
+     {
+      "control_type": "engineering",
+      "description": "사용하는 모든 도장 장비 및 페인트 용기에 정전기 방지용 접지(Grounding) 및 본딩(Bonding) 실시"
+     },
+     {
+      "control_type": "administrative",
+      "description": "도장 작업 구역 및 인접 블록 내 화기작업(용접 등)을 엄격히 통제하고 방폭형 전기기기만 사용"
+     }
+    ],
+    "ppe": [
+     "송기마스크",
+     "정전기 방지 안전화",
+     "제전복"
+    ],
+    "residual_likelihood": 1,
+    "residual_severity": 5,
+    "basis_likelihood": "밀폐 블록 내 분무 도장 시 고농도의 가연성 유기용제 증기가 빠르게 축적되어 가연성 분위기가 쉽게 조성됨",
+    "basis_severity": "화재 및 폭발 사고는 밀폐공간 특성상 피난이 불가하여 대형 화재로 번지고 인명 사망률이 극히 높음",
+    "residual_basis_likelihood": "연동형 자동 차단 장치와 접지, 강제 배기 환기를 통하여 가스 누출 분위기 형성 및 점화원 생성을 전면 차단함",
+    "residual_basis_severity": "가스 폭발 사고 발생 시의 피해 강도는 여전히 치명적이므로 안전장치 신뢰성 확보와 무관하게 심각도는 유지함",
+    "improvement_required": false,
+    "needs_review": false,
+    "needs_review_reason": ""
+   },
+   {
+    "step": "4. 도장 설비 및 작업구역 세척 작업",
+    "category": "유해가스 및 화학물질",
+    "hazard": "세척용 유기용제 증기 노출에 의한 유해물질 급성 중독",
+    "cause": "세척 장비 정비 및 용제 취급 중 세척제 증기가 체류하고 호흡기 보호 대책이 미흡함",
+    "damage": "급성 유기용제 중독으로 인한 두통, 어지러움, 호흡 곤란 및 의식 상실",
+    "likelihood": 3,
+    "severity": 4,
+    "measures": [
+     {
+      "control_type": "engineering",
+      "description": "세척 작업 시 국소배기장치를 최적의 위치에 배치하여 가동하고 증기 발생원 밀폐화"
+     },
+     {
+      "control_type": "administrative",
+      "description": "세척제 MSDS 경고표지 부착, 취급 유해성 및 응급처치 요령에 대한 작업자 특별 안전교육 실시"
+     }
+    ],
+    "ppe": [
+     "방독마스크",
+     "화학물질용 안전장갑",
+     "보안경",
+     "화학물질용 보호복"
+    ],
+    "residual_likelihood": 1,
+    "residual_severity": 4,
+    "basis_likelihood": "휘발성이 강한 세척제 특성상 세척 작업 중 가동 부위 인근에서 고농도 유기증기가 다량 방출되어 흡입될 가능성이 높음",
+    "basis_severity": "유기용제 가스의 급성 중독은 신경계 마비 및 심하면 의식을 잃고 질식사로 이어지는 중상으로 진행될 수 있음",
+    "residual_basis_likelihood": "국소배기장치의 철저한 가동과 호흡용 보호구 착용을 강제함으로써 작업자 호흡기 노출 가능성을 최소화함",
+    "residual_basis_severity": "사용 화학물질 자체의 유해 수준과 중독 시 유해도는 보존되므로 심각도 점수는 기존 수준 유지함",
+    "improvement_required": false,
+    "needs_review": false,
+    "needs_review_reason": ""
+   },
+   {
+    "step": "5. 도장 및 세척 설비 정비 작업",
+    "category": "협착 및 끼임",
+    "hazard": "설비 정비 중 구동부 오작동에 의한 신체 끼임 및 협착",
+    "cause": "전동공구를 사용해 설비를 분해·정비하는 중 잔류 동력에 의해 구동부가 회전하거나 전원이 불시에 인입됨",
+    "damage": "구동부 회전축에 의한 손가락 등 신체 부위 협착 및 골절",
+    "likelihood": 2,
+    "severity": 3,
+    "measures": [
+     {
+      "control_type": "engineering",
+      "description": "정비 대상 설비의 동력을 완전히 차단하고 주전원 차단기에 시건장치 및 표지판 설치(LOTO 적용)"
+     },
+     {
+      "control_type": "administrative",
+      "description": "전동공구 등 정비 기기의 방호덮개 장착 상태 점검 및 안전 수칙 미준수 작업 금지"
+     }
+    ],
+    "ppe": [
+     "안전모",
+     "보안경",
+     "안전화",
+     "정비용 밀착형 장갑"
+    ],
+    "residual_likelihood": 1,
+    "residual_severity": 3,
+    "basis_likelihood": "정비 시 불완전한 에너지 차단이나 기기 오조작으로 구동 장치가 작동하여 손을 다칠 위험이 있음",
+    "basis_severity": "전동 구동 장치 기어 또는 회전체에 손가락 등이 끼일 경우 심각한 뼈 손상이나 외과 수술이 필요한 골절을 유발함",
+    "residual_basis_likelihood": "LOTO 절차의 완벽한 수립과 시행으로 정비 도중 기기가 불시에 작동할 가능성을 근본적으로 제거함",
+    "residual_basis_severity": "물리적인 전동 구동부와 신체 접촉 시 상해를 동반하는 기계적 위험도는 변함이 없으므로 유지함",
+    "improvement_required": false,
+    "needs_review": false,
+    "needs_review_reason": ""
+   }
+  ],
+  "no_hazard_steps": [
+   {
+    "step": "6. 작업 공구 회수 및 정리정돈",
+    "reason": "해당 단계는 정비 및 세척 작업 완료 후 현장의 전원을 차단하고 안전하게 잔여 자재와 공구를 반출하는 단순 정리정돈 단계로, 선행 공정의 모든 위험 요인이 제거된 상태에서 수행되어 특이 위험요인이 없다고 판단됨"
+   }
+  ],
+  "ppe_list": [
+   "송기마스크 또는 공기호흡기",
+   "유기화합물용 방독마스크",
+   "정전기 방지 안전화(제전화)",
+   "제전복",
+   "화학물질용 안전장갑",
+   "보안경",
+   "안전모"
+  ],
+  "tbm": [
+   "밀폐공간 진입 전 산소 농도(18% 이상) 및 유가 가스 검지 결과를 반드시 현장 게시판에서 확인하고 들어가십시오.",
+   "도장 작업 중 가스 검지기의 알람(LEL 10% 기준)이 울리면 즉시 작업을 중단하고 환기 설비를 최대 가동하며 대피하십시오.",
+   "모든 도장 용기, 스프레이건은 접지선이 제대로 물려 있는지 확인하고 도선이 분리된 경우 작업을 절대 시작하지 마십시오.",
+   "세척 작업 시 유기화합물 전용 방독마스크를 철저히 착용하고, 어지러움이나 두통 등 중독 초기 증상이 나타날 시 즉시 감시인에게 알리고 밖으로 탈출하십시오.",
+   "본 위험성평가 결과에 대한 근로자 의견 청취"
+  ],
+  "checklist": [
+   "밀폐공간 출입 전 산소 및 가연성 가스 농도를 측정하고 출입허가서를 부착했는가?",
+   "블록 내 가스 배출을 위한 방폭형 급·배기 환기 장치가 끊임없이 정상 가동되고 있는가?",
+   "스프레이건 및 모든 금속제 페인트 용기의 정전기 방지 접지 상태를 확인했는가?",
+   "사용하는 세척제 및 도료의 MSDS가 현장에 비치되어 있고 작업자들이 위험성을 숙지하고 있는가?",
+   "정비 전 전원을 차단하고 시건장치 및 꼬리표(LOTO)를 설치하였는가?",
+   "작업자들이 작업 종류에 맞는 보호구(송기마스크, 제전복, 안전화 등)를 올바르게 착용했는가?"
+  ]
+ },
+ "findings": [
+  {
+   "category": "추락",
+   "status": "보완",
+   "comment": "블록 내부 진출입을 위한 임시 사다리/발판 이용 시 추락 위험이 있으므로 이에 대비한 안전 관리 조치 보완 필요"
+  },
+  {
+   "category": "낙하 및 비래",
+   "status": "해당없음",
+   "comment": "본 세척 및 도장 작업 시 상하 동시 작업 구역 분리로 낙하물 위험성은 낮음"
+  },
+  {
+   "category": "협착 및 끼임",
+   "status": "적정",
+   "comment": "설비 정비 단계의 에너지 차단(LOTO) 대책이 충실히 반영됨"
+  },
+  {
+   "category": "충돌",
+   "status": "해당없음",
+   "comment": "선박 블록 내부 작업으로 하역 및 이동 차량에 의한 충돌 위험 무관"
+  },
+  {
+   "category": "전도",
+   "status": "보완",
+   "comment": "블록 내부의 호스 배선 및 세척제 바닥 유출로 인한 미끄러짐(전도) 위험이 높으나 초안 정리 단계에 누락되어 보완"
+  },
+  {
+   "category": "감전",
+   "status": "적정",
+   "comment": "습기 있는 환경에서의 임시 전원선 감전 방지 및 누전차단기 사용 대책 적정 수립"
+  },
+  {
+   "category": "화재 및 폭발",
+   "status": "적정",
+   "comment": "인화성 증기 감지 및 자동 연동 차단 시스템, 정전기 본딩 대책이 매우 우수하게 반영됨"
+  },
+  {
+   "category": "유해가스 및 화학물질",
+   "status": "적정",
+   "comment": "도장 및 세척에 사용되는 유기용제 중독 예방을 위한 국소배기 및 MSDS 관리 대책 적정 수립"
+  },
+  {
+   "category": "소음 및 진동",
+   "status": "해당없음",
+   "comment": "스프레이 작업 시 발생하는 일시적 소음 외 주된 노출 강도가 낮음"
+  },
+  {
+   "category": "근골격계 부담",
+   "status": "보완",
+   "comment": "밀폐 및 협소 구역 내 도장 작업 중 반복적 수작업과 불편한 자세를 예방하기 위한 스트레칭 등의 보완 대책 필요"
+  },
+  {
+   "category": "고온 및 저온",
+   "status": "해당없음",
+   "comment": "도크 내부 상온 환경에서 진행되며 극단적 기온 영향은 배제됨"
+  },
+  {
+   "category": "차량 및 중장비",
+   "status": "해당없음",
+   "comment": "협소한 내부 구역으로 대형 차량의 출입이나 관련 유해 요인 없음"
+  },
+  {
+   "category": "밀폐공간",
+   "status": "적정",
+   "comment": "질식 위험 대비 산소 및 가스 농도 측정, 밀폐공간 허가, 감시인 지정 조치 완비"
+  },
+  {
+   "category": "작업자 간 의사소통",
+   "status": "해당없음",
+   "comment": "도장공 및 보조인 배치로 원활한 상호 신호 조치가 가능하여 주 위험에 미해당"
+  },
+  {
+   "category": "작업구역 통제",
+   "status": "보완",
+   "comment": "인화성 유기용제 취급 도장 구역 인근에 무단 외부인 출입이나 화기 작업 방지를 위한 명확한 통제 조치 보완 필요"
+  },
+  {
+   "category": "작업허가",
+   "status": "적정",
+   "comment": "밀폐공간 출입 허가(PTW) 절차 검토 결과 적정하게 적용됨"
+  },
+  {
+   "category": "개인보호구",
+   "status": "보완",
+   "comment": "유기용제 및 세척제 취급 시 단순 방독마스크를 넘어 밀폐구역 밀폐도에 맞춘 송기마스크 착용 권장으로 강화 필요"
+  },
+  {
+   "category": "감정노동·심리사회적 위험",
+   "status": "해당없음",
+   "comment": "고객 응대 등의 감정 유발 요소가 부재하므로 해당사항 없음"
+  },
+  {
+   "category": "폭력·상해 위험",
+   "status": "해당없음",
+   "comment": "타인과의 접촉이 제한된 블록 내부 환경으로 폭력 위험 배제됨"
+  },
+  {
+   "category": "생물학적 위험",
+   "status": "해당없음",
+   "comment": "병원체, 해충, 감염병 등 생물학적 요인과의 직접적 연관성 없음"
+  }
+ ],
+ "changes": [
+  {
+   "action": "수정",
+   "target": "no_hazard_steps",
+   "description": "초안에서 무위험 단계로 분류된 '6. 작업 공구 회수 및 정리정돈' 단계를 케이블 걸림 및 바닥 세척제 노출로 인한 전도 위험단계로 전환하여 안전대책을 신설하였습니다."
+  },
+  {
+   "action": "수정",
+   "target": "PPE",
+   "description": "세척 작업(4단계)을 밀폐공간 내 고농도 유기증기 작업으로 감안하여 착용 보호구를 일반 방독마스크에서 '송기마스크' 수준으로 강화하여 도장 작업과 안전 수준을 동기화하였습니다."
+  },
+  {
+   "action": "추가",
+   "target": "위험요인",
+   "description": "도장 구역 주변 반경 10m 이내 화기 통제 및 비좁은 블록 내 부적절한 수작업 자세에 따른 근골격계 부담 방지 대책을 3단계에 추가하였습니다."
+  }
+ ],
+ "final": {
+  "work_overview": "본 작업은 조선소 제3도크의 선박 블록 내부에서 도장, 설비 세척 및 정비를 수행하는 작업입니다. 밀폐된 블록 내에서 인화성 유기용제와 세척제를 사용함에 따라 질식, 화재·폭발, 급성 중독의 위험이 매우 높아 철저한 사전 환기와 가스 측정이 요구됩니다.",
+  "work_steps": [
+   "1. 작업 전 가스 농도 측정 및 밀폐공간 작업허가",
+   "2. 급·배기 환기설비 설치 및 가동",
+   "3. 블록 내부 도장 작업",
+   "4. 도장 설비 및 작업구역 세척 작업",
+   "5. 도장 및 세척 설비 정비 작업",
+   "6. 작업 공구 회수 및 정리정돈"
+  ],
+  "hazards": [
+   {
+    "step": "1. 작업 전 가스 농도 측정 및 밀폐공간 작업허가",
+    "category": "밀폐공간",
+    "hazard": "산소결핍 및 유해가스 체류로 인한 질식 위험",
+    "cause": "사전 가스 농도 측정 없이 밀폐된 블록 내부에 무단 진입함",
+    "damage": "산소결핍증으로 인한 질식 및 사망",
+    "likelihood": 3,
+    "severity": 5,
+    "measures": [
+     {
+      "control_type": "administrative",
+      "description": "밀폐공간 출입 전 산소(18% 이상 23.5% 미만) 및 유해가스 농도 연속 측정 및 밀폐공간 출입 허가서 발급"
+     },
+     {
+      "control_type": "administrative",
+      "description": "작업장 입구에 감시인을 상시 배치하여 출입 인원 파악 및 무단 진입 방지"
+     }
+    ],
+    "ppe": [
+     "송기마스크",
+     "산소/유해가스 측정기"
+    ],
+    "residual_likelihood": 1,
+    "residual_severity": 5,
+    "basis_likelihood": "환기가 불량한 선박 블록 내부의 특성상 밀폐공간 진입 전 미측정 시 질식 사고 발생 가능성이 높음",
+    "basis_severity": "밀폐공간 내 산소농도 저하 및 유해가스 흡입 시 뇌사에 이르거나 사망하는 치명적인 결과를 초래함",
+    "residual_basis_likelihood": "사전 출입허가제 준수 및 철저한 측정으로 미측정 상태의 진입 가능성을 근본적으로 제거함",
+    "residual_basis_severity": "질식 사고 발생 시의 피해 심각도 자체는 여전히 중대하므로 기존 점수를 유지함",
+    "improvement_required": false,
+    "needs_review": false,
+    "needs_review_reason": ""
+   },
+   {
+    "step": "2. 급·배기 환기설비 설치 및 가동",
+    "category": "감전",
+    "hazard": "습한 환경에서 임시 동력선 사용 시 누전에 의한 감전",
+    "cause": "방폭형 환기설비 등 임시 전원 케이블의 절연 피복 손상 및 접지 불량",
+    "damage": "감전으로 인한 심정지 또는 추락 등 2차 재해",
+    "likelihood": 2,
+    "severity": 4,
+    "measures": [
+     {
+      "control_type": "engineering",
+      "description": "누전차단기(정격감도전류 30mA 이하, 작동시간 0.03초 이내)가 부착된 분전반 전원만 사용"
+     },
+     {
+      "control_type": "engineering",
+      "description": "환기설비 외함 외측에 규격에 맞는 접지선 연결 확인"
+     },
+     {
+      "control_type": "administrative",
+      "description": "작업 전 케이블 피복의 열화 및 파손 여부를 정밀 점검하고 불량품은 즉시 폐기"
+     }
+    ],
+    "ppe": [
+     "절연장갑",
+     "절연화"
+    ],
+    "residual_likelihood": 1,
+    "residual_severity": 4,
+    "basis_likelihood": "조선소 도크 특성상 습기가 많아 절연 파손 부위를 통한 누전 발생 가능성이 상존함",
+    "basis_severity": "충전부 접촉 시 전격에 의해 심정지나 근육 수축으로 인한 2차 추락 등 중상을 초래할 수 있음",
+    "residual_basis_likelihood": "누전차단기 사용 및 사전 접지·절연 점검을 통해 감전 유발 가능성을 현저히 낮춤",
+    "residual_basis_severity": "전격의 물리적 영향 자체를 제어할 수 없으므로 감전 시의 심각도 점수는 유지함",
+    "improvement_required": false,
+    "needs_review": false,
+    "needs_review_reason": ""
+   },
+   {
+    "step": "3. 블록 내부 도장 작업",
+    "category": "화재 및 폭발",
+    "hazard": "인화성 증기 체류 및 정전기 스파크에 의한 화재·폭발",
+    "cause": "스프레이 도장 중 분무된 가연성 용제 증기가 폭발하한계(LEL) 이상 체류하고 스프레이건 정전기 등 점화원이 접촉함",
+    "damage": "화재·폭발로 인한 폭풍압 피해 및 전신 화상, 사망",
+    "likelihood": 3,
+    "severity": 5,
+    "measures": [
+     {
+      "control_type": "engineering",
+      "description": "연속적인 가스 검지기 설치를 통한 인화성 증기 농도 모니터링 및 LEL 10% 초과 시 도장기 전원 자동 차단 연동"
+     },
+     {
+      "control_type": "engineering",
+      "description": "사용하는 모든 도장 장비 및 페인트 용기에 정전기 방지용 접지(Grounding) 및 본딩(Bonding) 실시"
+     },
+     {
+      "control_type": "administrative",
+      "description": "도장 작업 구역 반경 10m 이내 인접 블록의 화기작업(용접 등)을 엄격히 통제하고 접근통제선을 설치함"
+     },
+     {
+      "control_type": "administrative",
+      "description": "협소 공간 내 부적절한 자세에 따른 근골격계 부담 완화를 위해 주기적(매 시간 10분) 스트레칭 및 휴식을 부여함"
+     }
+    ],
+    "ppe": [
+     "송기마스크",
+     "정전기 방지 안전화",
+     "제전복"
+    ],
+    "residual_likelihood": 1,
+    "residual_severity": 5,
+    "basis_likelihood": "밀폐 블록 내 분무 도장 시 고농도의 가연성 유기용제 증기가 빠르게 축적되어 가연성 분위기가 쉽게 조성됨",
+    "basis_severity": "화재 및 폭발 사고는 밀폐공간 특성상 피난이 불가하여 대형 화재로 번지고 인명 사망률이 극히 높음",
+    "residual_basis_likelihood": "연동형 자동 차단 장치와 접지, 강제 배기 환기를 통하여 가스 누출 분위기 형성 및 점화원 생성을 전면 차단함",
+    "residual_basis_severity": "가스 폭발 사고 발생 시의 피해 강도는 여전히 치명적이므로 안전장치 신뢰성 확보와 무관하게 심각도는 유지함",
+    "improvement_required": false,
+    "needs_review": false,
+    "needs_review_reason": ""
+   },
+   {
+    "step": "4. 도장 설비 및 작업구역 세척 작업",
+    "category": "유해가스 및 화학물질",
+    "hazard": "세척용 유기용제 증기 노출에 의한 유해물질 급성 중독",
+    "cause": "세척 장비 정비 및 용제 취급 중 세척제 증기가 체류하고 호흡기 보호 대책이 미흡함",
+    "damage": "급성 유기용제 중독으로 인한 두통, 어지러움, 호흡 곤란 및 의식 상실",
+    "likelihood": 3,
+    "severity": 4,
+    "measures": [
+     {
+      "control_type": "engineering",
+      "description": "세척 작업 시 국소배기장치를 최적의 위치에 배치하여 가동하고 증기 발생원 밀폐화"
+     },
+     {
+      "control_type": "administrative",
+      "description": "세척제 MSDS 경고표지 부착, 취급 유해성 및 응급처치 요령에 대한 작업자 특별 안전교육 실시"
+     }
+    ],
+    "ppe": [
+     "송기마스크",
+     "화학물질용 안전장갑",
+     "보안경",
+     "화학물질용 보호복"
+    ],
+    "residual_likelihood": 1,
+    "residual_severity": 4,
+    "basis_likelihood": "휘발성이 강한 세척제 특성상 세척 작업 중 가동 부위 인근에서 고농도 유기증기가 다량 방출되어 흡입될 가능성이 높음",
+    "basis_severity": "유기용제 가스의 급성 중독은 신경계 마비 및 심하면 의식을 잃고 질식사로 이어지는 중상으로 진행될 수 있음",
+    "residual_basis_likelihood": "국소배기장치의 철저한 가동과 최고 등급의 송기마스크 착용을 강제함으로써 작업자 호흡기 노출 가능성을 최소화함",
+    "residual_basis_severity": "사용 화학물질 자체의 유해 수준과 중독 시 유해도는 보존되므로 심각도 점수는 기존 수준 유지함",
+    "improvement_required": false,
+    "needs_review": false,
+    "needs_review_reason": ""
+   },
+   {
+    "step": "5. 도장 및 세척 설비 정비 작업",
+    "category": "협착 및 끼임",
+    "hazard": "설비 정비 중 구동부 오작동에 의한 신체 끼임 및 협착",
+    "cause": "전동공구를 사용해 설비를 분해·정비하는 중 잔류 동력에 의해 구동부가 회전하거나 전원이 불시에 인입됨",
+    "damage": "구동부 회전축에 의한 손가락 등 신체 부위 협착 및 골절",
+    "likelihood": 2,
+    "severity": 3,
+    "measures": [
+     {
+      "control_type": "engineering",
+      "description": "정비 대상 설비의 동력을 완전히 차단하고 주전원 차단기에 시건장치 및 표지판 설치(LOTO 적용)"
+     },
+     {
+      "control_type": "administrative",
+      "description": "전동공구 등 정비 기기의 방호덮개 장착 상태 점검 및 안전 수칙 미준수 작업 금지"
+     }
+    ],
+    "ppe": [
+     "안전모",
+     "보안경",
+     "안전화",
+     "정비용 밀착형 장갑"
+    ],
+    "residual_likelihood": 1,
+    "residual_severity": 3,
+    "basis_likelihood": "정비 시 불완전한 에너지 차단이나 기기 오조작으로 구동 장치가 작동하여 손을 다칠 위험이 있음",
+    "basis_severity": "전동 구동 장치 기어 또는 회전체에 손가락 등이 끼일 경우 심각한 뼈 손상이나 외과 수술이 필요한 골절을 유발함",
+    "residual_basis_likelihood": "LOTO 절차의 완벽한 수립과 시행으로 정비 도중 기기가 불시에 작동할 가능성을 근본적으로 제거함",
+    "residual_basis_severity": "물리적인 전동 구동부와 신체 접촉 시 상해를 동반하는 기계적 위험도는 변함이 없으므로 유지함",
+    "improvement_required": false,
+    "needs_review": false,
+    "needs_review_reason": ""
+   },
+   {
+    "step": "6. 작업 공구 회수 및 정리정돈",
+    "category": "전도",
+    "hazard": "어두운 블록 내부 및 바닥의 케이블, 잔여 세척제 등에 의한 미끄러짐 및 전도 위험",
+    "cause": "정리되지 않은 호스·케이블과 세척액 누출로 인해 바닥이 미끄러운 상태에서 무리하게 이동함",
+    "damage": "미끄러짐으로 인한 골절, 염좌 및 안면부 충돌",
+    "likelihood": 3,
+    "severity": 2,
+    "measures": [
+     {
+      "control_type": "engineering",
+      "description": "바닥 조도를 완벽히 확보하기 위해 최소 150lux 이상의 이동식 안전 작업등(방폭형)을 통로 변에 추가 설치함"
+     },
+     {
+      "control_type": "administrative",
+      "description": "사용 완료된 케이블 및 호스는 바닥에 방치하지 않고 수시로 감아서 보관 구역으로 정리 수거하며, 유출 세척제는 즉시 닦아냄"
+     }
+    ],
+    "ppe": [
+     "안전화",
+     "안전모"
+    ],
+    "residual_likelihood": 1,
+    "residual_severity": 2,
+    "basis_likelihood": "블록 내부는 비좁고 어두우며, 복잡하게 가설된 배선과 세척액 유출로 발을 헛디뎌 미끄러질 가능성이 매우 높음",
+    "basis_severity": "전도 시 돌출되어 있는 선박 내 강재 프레임 등에 부딪혀 골절이나 타박상 등 경상에서 중상 수준의 부상을 입을 수 있음",
+    "residual_basis_likelihood": "조도 확보 및 통로 바닥 잔여물과 전선 가설물 전면 정리를 통하여 발넘어짐 가능성을 대폭 경감함",
+    "residual_basis_severity": "넘어질 경우 바닥 충격에 따른 단순 염좌 또는 가벼운 통증 등 경미한 상해 유발은 여전히 가능하므로 유지함",
+    "improvement_required": false,
+    "needs_review": false,
+    "needs_review_reason": ""
+   }
+  ],
+  "no_hazard_steps": [],
+  "ppe_list": [
+   "송기마스크 또는 공기호흡기",
+   "유기화합물용 방독마스크(보조용)",
+   "정전기 방지 안전화(제전화)",
+   "제전복",
+   "화학물질용 안전장갑",
+   "보안경",
+   "안전모"
+  ],
+  "tbm": [
+   "밀폐공간 진입 전 산소 농도(18% 이상) 및 유가 가스 검지 결과를 반드시 현장 게시판에서 확인하고 들어가십시오.",
+   "도장 작업 중 가스 검지기의 알람(LEL 10% 기준)이 울리면 즉시 작업을 중단하고 환기 설비를 최대 가동하며 대피하십시오.",
+   "모든 도장 용기, 스프레이건은 접지선이 제대로 물려 있는지 확인하고 도선이 분리된 경우 작업을 절대 시작하지 마십시오.",
+   "도장 및 세척 작업 시에는 유기용제 증기 급성 중독 예방을 위해 반드시 송기마스크를 밀착 착용하십시오.",
+   "공구 정리 및 철수 시 바닥에 늘어진 배선과 세척제 잔여물로 미끄러질 위험이 크므로 발밑 조도를 확보하고 정리정돈을 철저히 합시다.",
+   "본 위험성평가 결과에 대한 근로자 의견 청취"
+  ],
+  "checklist": [
+   "밀폐공간 출입 전 산소 및 가연성 가스 농도를 측정하고 출입허가서를 부착했는가?",
+   "블록 내 가스 배출을 위한 방폭형 급·배기 환기 장치가 끊임없이 정상 가동되고 있는가?",
+   "스프레이건 및 모든 금속제 페인트 용기의 정전기 방지 접지 상태를 확인했는가?",
+   "세척 및 도장 시 송기마스크를 올바르게 착용하고 공기 공급 압력을 확인했는가?",
+   "정비 전 전원을 차단하고 시건장치 및 꼬리표(LOTO)를 설치하였는가?",
+   "작업 후 바닥의 미끄러운 유기용제 잔해를 제거하고 잔여 케이블을 정리정돈 하였는가?"
+  ]
+ }
+}
