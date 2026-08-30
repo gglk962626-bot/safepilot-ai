@@ -341,51 +341,10 @@ def build_pdf(result: FullResult) -> bytes:
     ]))
     story.append(t)
 
-    # 7. AI 교차검토 결과 (20개 위험범주)
-    story.append(Paragraph("7. AI 교차검토 결과 (20개 위험범주 전수 점검)", styles["h2"]))
-    story.append(Paragraph(
-        "※ 본 내용은 최종 결과에 반영된 AI 교차검토 및 보완 과정을 확인하기 위한 검증 기록입니다.",
-        styles["note"]))
-    rv_rows = [[P("검토 범주", "cell_b"), P("판정", "cell_b"), P("검토 의견", "cell_b")]]
-    for f in result.review.findings:
-        rv_rows.append([P(f.category, "cell"), P(f.status, "cell"), P(f.comment, "cell")])
-    t = Table(rv_rows, colWidths=[42 * mm, 18 * mm, 211 * mm], repeatRows=1)
-    t.setStyle(TableStyle([
-        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#bbbbbb")),
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eef3f8")),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-    ]))
-    story.append(t)
-
-    # 8. 검토 전후 변경사항
-    if result.review.changes:
-        story.append(Paragraph("8. 검토 전후 변경사항", styles["h2"]))
-        for i, c in enumerate(result.review.changes, 1):
-            story.append(P(f"{i}. [{c.action}/{c.target}] {c.description}"))
-
-    # 9. 위험요인별 판단 근거 (표 밖 별도 영역)
-    story.append(Paragraph("9. 위험요인별 가능성·심각도 판단 근거", styles["h2"]))
-    basis_rows = [[P("위험요인", "cell_b"), P("가능성 근거", "cell_b"), P("심각도 근거", "cell_b")]]
-    for h in final.hazards:
-        basis_rows.append([
-            P(h.hazard, "cell"),
-            P(f"{h.likelihood}점 — {getattr(h, 'basis_likelihood', '') or '-'}", "cell"),
-            P(f"{h.severity}점 — {getattr(h, 'basis_severity', '') or '-'}", "cell"),
-        ])
-    t = Table(basis_rows, colWidths=[75 * mm, 98 * mm, 98 * mm], repeatRows=1)
-    t.setStyle(TableStyle([
-        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#bbbbbb")),
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eef3f8")),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-    ]))
-    story.append(t)
-
-    # 10. 근로자 의견 (현장 기재용)
-    story.append(Paragraph("10. 근로자 의견", styles["h2"]))
+    # 7. 근로자 의견 (현장 기재용)
+    # (AI 교차검토 결과·검토 전후 변경사항·판단 근거는 화면에서만 확인하는
+    #  검증 기록으로, 현장 제출용 보고서에는 싣지 않는다.)
+    story.append(Paragraph("7. 근로자 의견", styles["h2"]))
     story.append(Paragraph("본 위험성평가 결과에 대한 근로자 의견을 청취하고 아래에 기재합니다.", styles["note"]))
     opinion_rows = [
         [P("근로자 의견", "cell_b"), P("\n\n\n", "cell")],
@@ -402,9 +361,9 @@ def build_pdf(result: FullResult) -> bytes:
     ]))
     story.append(t)
 
-    # 11. 현장 책임자 확인
+    # 8. 현장 책임자 확인
     story.append(Spacer(1, 4 * mm))
-    story.append(Paragraph("11. 현장 책임자 확인", styles["h2"]))
+    story.append(Paragraph("8. 현장 책임자 확인", styles["h2"]))
     sign_rows = [
         [P("확인 내용", "cell_b"),
          P("본 위험성평가 결과를 검토하였으며, 현장 여건에 맞게 최종 확인함", "cell")],
@@ -480,20 +439,8 @@ def build_html_report(result: FullResult) -> str:
         hazard_rows += f"""<tr><td>{esc(ns.step)}</td>
         <td colspan="6"><b>유의미한 위험요인 없음</b><br><small>사유: {esc(ns.reason or '-')}</small></td></tr>"""
 
-    finding_rows = "".join(
-        f"<tr><td>{esc(f.category)}</td><td class='c'>{esc(f.status)}</td><td>{esc(f.comment)}</td></tr>"
-        for f in result.review.findings
-    )
-    change_items = "".join(
-        f"<li>[{esc(c.action)}/{esc(c.target)}] {esc(c.description)}</li>"
-        for c in result.review.changes
-    )
-    basis_rows = "".join(
-        f"<tr><td>{esc(h.hazard)}</td>"
-        f"<td>{h.likelihood}점 — {esc(getattr(h, 'basis_likelihood', '') or '-')}</td>"
-        f"<td>{h.severity}점 — {esc(getattr(h, 'basis_severity', '') or '-')}</td></tr>"
-        for h in final.hazards
-    )
+    # AI 교차검토 결과·검토 전후 변경사항·판단 근거는 화면에서만 확인하는
+    # 검증 기록으로, 현장 제출용 보고서에는 싣지 않는다.
     tbm_items = "".join(f"<li>{esc(t)}</li>" for t in final.tbm)
     check_items = "".join(
         f"<tr><td class='c'>{i}</td><td>{esc(item)}</td><td class='c'>[&nbsp;&nbsp;&nbsp;]</td></tr>"
@@ -553,23 +500,14 @@ pre{{font-family:inherit;white-space:pre-wrap;background:#f6f8fb;border:1px soli
 <h2>6. 작업 전 체크리스트</h2>
 <table><tr><th style="width:40px">No.</th><th>점검 항목</th><th style="width:60px">확인</th></tr>{check_items}</table>
 
-<h2>7. AI 교차검토 결과 (20개 위험범주 전수 점검)</h2>
-<p style="font-size:12px;color:#64748b;margin-top:-4px">※ 본 내용은 최종 결과에 반영된 AI 교차검토 및 보완 과정을 확인하기 위한 검증 기록입니다.</p>
-<table><tr><th style="width:150px">검토 범주</th><th style="width:70px">판정</th><th>검토 의견</th></tr>{finding_rows}</table>
-
-<h2>8. 검토 전후 변경사항</h2><ol>{change_items}</ol>
-
-<h2>9. 위험요인별 가능성·심각도 판단 근거</h2>
-<table><tr><th>위험요인</th><th>가능성 근거</th><th>심각도 근거</th></tr>{basis_rows}</table>
-
-<h2>10. 근로자 의견</h2>
+<h2>7. 근로자 의견</h2>
 <p style="font-size:12px;color:#64748b">본 위험성평가 결과에 대한 근로자 의견을 청취하고 아래에 기재합니다.</p>
 <table>
 <tr><th style="width:120px">근로자 의견</th><td style="height:70px"></td></tr>
 <tr><th>참여 근로자</th><td>성명 ______________ &nbsp;&nbsp; 서명 ______________</td></tr>
 </table>
 
-<h2>11. 현장 책임자 확인</h2>
+<h2>8. 현장 책임자 확인</h2>
 <table>
 <tr><th style="width:120px">확인 내용</th><td>본 위험성평가 결과를 검토하였으며, 현장 여건에 맞게 최종 확인함</td></tr>
 <tr><th>소속 / 직책</th><td style="height:30px"></td></tr>
