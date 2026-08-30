@@ -115,9 +115,12 @@ check("[6] detected_chemicals 기본값 빈 목록 (기존 데이터 호환)",
 # [7] 기존 데모 4종 무영향 (식별 0 → 카드·전달 없음)
 # ---------------------------------------------------------------------------
 import demo_data
-for key in ("welding", "callcenter", "food", "painting"):
+for key in ("welding", "callcenter", "food"):
     w = demo_data.get_sample_input(key)
     check(f"[7] {key} 데모 샘플 → 물질 식별 0 (결과 불변)", names(w) == [])
+# 도장·세척 데모는 특이사항에 아세톤을 명시 → MSDS 카드 시연용으로 식별됨
+check("[7] painting 데모 샘플 → 아세톤 식별 (MSDS 카드 표시)",
+      names(demo_data.get_sample_input("painting")) == ["아세톤"])
 
 print()
 print(f"결과: {len(passed)} PASS / {len(failed)} FAIL")
