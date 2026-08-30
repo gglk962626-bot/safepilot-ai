@@ -532,7 +532,8 @@ if generate:
                     detected_chemicals=[c["name"] for c in
                                         msds_data.identify_chemicals(demo_work)],
                 )
-                st.session_state.result_ver += 1  # 새 결과 → 편집 위젯 상태 초기화
+                # 긴 생성 도중 세션이 만료되면 키가 사라질 수 있어 안전하게 증가
+                st.session_state["result_ver"] = st.session_state.get("result_ver", 0) + 1  # 새 결과 → 편집 위젯 상태 초기화
                 if missing:
                     st.info("데모 모드: 입력값이 비어 있어 샘플 작업 정보로 결과를 표시합니다.", icon="ℹ️")
             else:
@@ -566,7 +567,8 @@ if generate:
                     reference_ids=[s["reference"]["reference_id"] for s in _selected_refs],
                     detected_chemicals=[c["name"] for c in _chems],
                 )
-                st.session_state.result_ver += 1  # 새 결과 → 편집 위젯 상태 초기화
+                # 긴 생성 도중 세션이 만료되면 키가 사라질 수 있어 안전하게 증가
+                st.session_state["result_ver"] = st.session_state.get("result_ver", 0) + 1  # 새 결과 → 편집 위젯 상태 초기화
         except ai_service.AIServiceError as e:
             st.session_state.result = None
             st.error(str(e), icon="🚨")
@@ -765,7 +767,7 @@ if result:
                 data["review"]["final"] = new_final.model_dump()
                 data["edited"] = True
                 st.session_state.result = FullResult.model_validate(data)
-                st.session_state.result_ver += 1  # 편집 위젯을 새 값으로 초기화
+                st.session_state["result_ver"] = st.session_state.get("result_ver", 0) + 1  # 편집 위젯을 새 값으로 초기화
                 st.rerun()
 
     # 위험성평가 표 (개선 전·후 위험성 + 개선관리)
