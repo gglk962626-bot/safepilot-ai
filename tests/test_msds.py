@@ -115,12 +115,23 @@ check("[6] detected_chemicals 기본값 빈 목록 (기존 데이터 호환)",
 # [7] 기존 데모 4종 무영향 (식별 0 → 카드·전달 없음)
 # ---------------------------------------------------------------------------
 import demo_data
-for key in ("welding", "callcenter", "food"):
+for key in ("welding", "callcenter", "food", "painting"):
     w = demo_data.get_sample_input(key)
     check(f"[7] {key} 데모 샘플 → 물질 식별 0 (결과 불변)", names(w) == [])
-# 도장·세척 데모는 특이사항에 아세톤을 명시 → MSDS 카드 시연용으로 식별됨
-check("[7] painting 데모 샘플 → 아세톤 식별 (MSDS 카드 표시)",
-      names(demo_data.get_sample_input("painting")) == ["아세톤"])
+# 시연 시나리오: 샘플 입력에는 물질명이 없어 안내 문구가 표시되고,
+# 발표자가 "세척에는 아세톤을 사용한다."를 직접 입력하면 식별로 전환된다.
+w_demo = demo_data.get_sample_input("painting")
+check("[7] painting 샘플 → 화학물질 확인 안내 표시 (물질 미식별)",
+      any("실제 사용하는 화학물질" in n for n in input_check.review_input(w_demo)["general"]))
+w_typed = w_demo.model_copy(update={"notes": w_demo.notes + " 세척에는 아세톤을 사용한다."})
+check("[7] 아세톤 문장 입력 후 → 아세톤 식별 + 안내 소멸",
+      names(w_typed) == ["아세톤"]
+      and not any("실제 사용하는 화학물질" in n
+                  for n in input_check.review_input(w_typed)["general"]))
+import json as _j
+check("[7] painting 데모 최종 결과에는 아세톤 내용 유지",
+      "아세톤" in _j.dumps(demo_data.get_demo_review("painting").final.model_dump(),
+                          ensure_ascii=False))
 
 print()
 print(f"결과: {len(passed)} PASS / {len(failed)} FAIL")
