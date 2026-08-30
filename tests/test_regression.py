@@ -356,6 +356,82 @@ check("[정제] TBM 선행 번호 제거", _ar.tbm[0] == "산소 농도를 측�
       and _ar.tbm[1] == "화기감시자를 배치한다" and _ar.tbm[2] == "번호 없는 항목")
 check("[정제] 이중 번호('1. 1.')도 제거", _ar.checklist[0] == "이중 번호 항목")
 
+# ---------------------------------------------------------------------------
+# [재시도] 5xx 서버 오류 자동 재시도 + 예비 모델 전환 (_generate_with_retry)
+# ---------------------------------------------------------------------------
+from google.genai.errors import ClientError, ServerError
+
+_sleeps = []
+_orig_sleep = ai_service.time.sleep
+ai_service.time.sleep = lambda s: _sleeps.append(s)
+
+
+class _FakeModels:
+    """호출 계획(plan)대로 예외를 던지거나 응답을 돌려주는 가짜 모델 클라이언트."""
+
+    def __init__(self, plan):
+        self.plan = list(plan)
+        self.calls = []  # 호출된 모델명 기록
+
+    def generate_content(self, model, contents, config):
+        self.calls.append(model)
+        step = self.plan.pop(0)
+        if isinstance(step, Exception):
+            raise step
+        return step
+
+
+class _FakeClient:
+    def __init__(self, plan):
+        self.models = _FakeModels(plan)
+
+
+class _FakeResp:
+    text = '{"ok": true}'
+    candidates = []
+
+
+def _err_503():
+    return ServerError(503, {"error": {"message": "The model is overloaded."}})
+
+
+# 1) 503 두 번 뒤 성공 → 같은 모델 안에서 재시도로 회복
+_fc = _FakeClient([_err_503(), _err_503(), _FakeResp()])
+_out = ai_service._call_model(_fc, "sys", "user")
+check("[재시도] 503 2회 후 3번째 성공", _out == '{"ok": true}' and len(_fc.models.calls) == 3)
+check("[재시도] 재시도 전 대기 (백오프 2s→4s)", _sleeps == [2.0, 4.0])
+check("[재시도] 회복 시 기본 모델 유지", set(_fc.models.calls) == {ai_service.DEFAULT_MODEL})
+
+# 2) 기본 모델 3회 모두 503 → 예비 모델로 전환해 성공
+_sleeps.clear()
+_fc2 = _FakeClient([_err_503(), _err_503(), _err_503(), _FakeResp()])
+_out2 = ai_service._call_model(_fc2, "sys", "user")
+check("[재시도] 기본 모델 소진 → 예비 모델로 성공",
+      _out2 == '{"ok": true}' and _fc2.models.calls[-1] == ai_service.FALLBACK_MODEL)
+check("[재시도] 예비 전환 시 총 호출 4회", len(_fc2.models.calls) == 4)
+
+# 3) 전부 503 → 재시도 횟수가 명시된 한국어 오류
+_fc3 = _FakeClient([_err_503() for _ in range(6)])
+try:
+    ai_service._call_model(_fc3, "sys", "user")
+    check("[재시도] 전부 실패 → 오류", False)
+except ai_service.AIServiceError as e:
+    check("[재시도] 전부 실패 → 한국어 안내 (재시도 횟수 포함)",
+          "혼잡" in str(e) and "6회" in str(e))
+check("[재시도] 전부 실패 시 총 호출 6회 (무한 반복 없음)", len(_fc3.models.calls) == 6)
+
+# 4) 429(한도)·401(키) 오류는 재시도 없이 즉시 한국어 오류 (기존 동작 유지)
+for _code, _kw in [(429, "한도"), (401, "인증")]:
+    _fce = _FakeClient([ClientError(_code, {"error": {"message": "x"}})])
+    try:
+        ai_service._call_model(_fce, "sys", "user")
+        check(f"[재시도] {_code}는 즉시 오류", False)
+    except ai_service.AIServiceError as e:
+        check(f"[재시도] {_code}는 재시도 없이 즉시 한국어 오류",
+              _kw in str(e) and len(_fce.models.calls) == 1)
+
+ai_service.time.sleep = _orig_sleep
+
 print()
 print(f"결과: {len(passed)} PASS / {len(failed)} FAIL")
 if key_present:

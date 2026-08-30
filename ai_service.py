@@ -44,6 +44,17 @@ DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
 MAX_TOKENS = 32768
 REQUEST_TIMEOUT = 600.0  # 초 단위. 위험성평가 생성은 수 분이 걸릴 수 있음
 
+# 서버 오류(5xx: 과부하 등 일시적 장애) 자동 재시도 설정
+# - 503("model is overloaded")은 구글 측 혼잡 신호로, 몇 초 뒤 재시도하면
+#   성공하는 경우가 많다. 모델당 총 SERVER_RETRY_ATTEMPTS회 시도하고,
+#   대기 시간은 2초, 4초로 늘려 간다 (지수 백오프).
+# - 기본 모델이 끝까지 5xx면 예비 모델로 같은 절차를 한 번 더 시도한다.
+#   예비 모델은 GEMINI_FALLBACK_MODEL로 변경할 수 있고, 빈 값("")으로
+#   설정하면 예비 전환을 하지 않는다.
+SERVER_RETRY_ATTEMPTS = 3
+SERVER_RETRY_BASE_DELAY = 2.0  # 초
+FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-flash-lite-latest")
+
 
 class AIServiceError(Exception):
     """사용자에게 그대로 보여줄 수 있는 한국어 오류 메시지를 담는 예외."""
@@ -90,56 +101,82 @@ def _get_client():
     )
 
 
-def _call_model(client, system: str, user: str) -> str:
-    """모델을 1회 호출하고 텍스트 응답을 반환한다. 오류는 한국어 메시지로 변환한다."""
+def _generate_with_retry(client, system: str, user: str):
+    """모델을 호출해 응답 객체를 반환한다.
+
+    - 5xx 서버 오류(과부하 등 일시적 장애)는 모델당 SERVER_RETRY_ATTEMPTS회까지
+      지수 백오프(2초, 4초)로 자동 재시도한다.
+    - 기본 모델이 끝까지 5xx면 예비 모델(FALLBACK_MODEL)로 한 차례 더 시도한다.
+    - 그 외 오류(키 인증, 한도 초과, 네트워크 등)는 재시도하지 않고 즉시
+      한국어 메시지로 변환해 올린다 (기존 동작 유지).
+    """
     from google.genai import types
     from google.genai.errors import APIError, ClientError, ServerError
 
-    try:
-        response = client.models.generate_content(
-            model=DEFAULT_MODEL,
-            contents=user,
-            config=types.GenerateContentConfig(
-                system_instruction=system,
-                response_mime_type="application/json",
-                max_output_tokens=MAX_TOKENS,
-            ),
-        )
-    except ClientError as e:
-        code = getattr(e, "code", None)
-        if code in (401, 403):
-            raise AIServiceError(
-                "API 키 인증에 실패했습니다. 키가 올바른지 확인해 주세요. "
-                "문제가 계속되면 데모 모드를 이용해 주세요."
-            ) from e
-        if code == 429:
-            raise AIServiceError(
-                "API 사용량 한도에 도달했습니다. 잠시 후 다시 시도하거나 데모 모드를 이용해 주세요."
-            ) from e
-        raise AIServiceError(
-            f"요청 처리 중 오류가 발생했습니다 (코드 {code}). "
-            "작업 내용을 확인한 뒤 다시 시도해 주세요."
-        ) from e
-    except ServerError as e:
-        raise AIServiceError(
-            f"AI 서비스 서버 오류가 발생했습니다 (코드 {getattr(e, 'code', None)}). "
-            "잠시 후 다시 시도하거나 데모 모드를 이용해 주세요."
-        ) from e
-    except APIError as e:
-        raise AIServiceError(
-            f"AI 서비스 오류가 발생했습니다: {e}. "
-            "잠시 후 다시 시도하거나 데모 모드를 이용해 주세요."
-        ) from e
-    except Exception as e:
-        if "timeout" in type(e).__name__.lower() or "timeout" in str(e).lower():
-            raise AIServiceError(
-                "AI 응답 대기 시간이 초과되었습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요. "
-                "작업 내용이 매우 길다면 조금 줄여서 시도해 보세요."
-            ) from e
-        raise AIServiceError(
-            "AI 서버에 연결할 수 없습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요. "
-            "계속 실패하면 데모 모드를 이용해 주세요."
-        ) from e
+    config = types.GenerateContentConfig(
+        system_instruction=system,
+        response_mime_type="application/json",
+        max_output_tokens=MAX_TOKENS,
+    )
+    models_to_try = [DEFAULT_MODEL]
+    if FALLBACK_MODEL and FALLBACK_MODEL != DEFAULT_MODEL:
+        models_to_try.append(FALLBACK_MODEL)
+
+    last_server_error = None
+    for model in models_to_try:
+        for attempt in range(SERVER_RETRY_ATTEMPTS):
+            try:
+                return client.models.generate_content(
+                    model=model, contents=user, config=config,
+                )
+            except ClientError as e:
+                code = getattr(e, "code", None)
+                if code in (401, 403):
+                    raise AIServiceError(
+                        "API 키 인증에 실패했습니다. 키가 올바른지 확인해 주세요. "
+                        "문제가 계속되면 데모 모드를 이용해 주세요."
+                    ) from e
+                if code == 429:
+                    raise AIServiceError(
+                        "API 사용량 한도에 도달했습니다. 잠시 후 다시 시도하거나 데모 모드를 이용해 주세요."
+                    ) from e
+                raise AIServiceError(
+                    f"요청 처리 중 오류가 발생했습니다 (코드 {code}). "
+                    "작업 내용을 확인한 뒤 다시 시도해 주세요."
+                ) from e
+            except ServerError as e:
+                # 일시적 서버 장애 → 대기 후 재시도, 소진 시 다음(예비) 모델
+                last_server_error = e
+                if attempt < SERVER_RETRY_ATTEMPTS - 1:
+                    time.sleep(SERVER_RETRY_BASE_DELAY * (2 ** attempt))
+                continue
+            except APIError as e:
+                raise AIServiceError(
+                    f"AI 서비스 오류가 발생했습니다: {e}. "
+                    "잠시 후 다시 시도하거나 데모 모드를 이용해 주세요."
+                ) from e
+            except Exception as e:
+                if "timeout" in type(e).__name__.lower() or "timeout" in str(e).lower():
+                    raise AIServiceError(
+                        "AI 응답 대기 시간이 초과되었습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요. "
+                        "작업 내용이 매우 길다면 조금 줄여서 시도해 보세요."
+                    ) from e
+                raise AIServiceError(
+                    "AI 서버에 연결할 수 없습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요. "
+                    "계속 실패하면 데모 모드를 이용해 주세요."
+                ) from e
+
+    total_tries = SERVER_RETRY_ATTEMPTS * len(models_to_try)
+    raise AIServiceError(
+        f"AI 서비스 서버가 혼잡합니다 (코드 {getattr(last_server_error, 'code', None)}). "
+        f"자동으로 {total_tries}회 재시도했지만 실패했습니다. "
+        "잠시 후 다시 시도하거나 데모 모드를 이용해 주세요."
+    ) from last_server_error
+
+
+def _call_model(client, system: str, user: str) -> str:
+    """모델을 호출하고 텍스트 응답을 반환한다. 오류는 한국어 메시지로 변환한다."""
+    response = _generate_with_retry(client, system, user)
 
     candidates = getattr(response, "candidates", None) or []
     finish_reason = None
